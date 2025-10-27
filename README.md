@@ -323,3 +323,14 @@ console.log(window.cesiumViewer);
 - 🌐 支持在线/离线双模式运行
 - 🔧 内置测试和调试工具
 - ⚡ 性能优化和内存管理
+
+## UI 模块化说明
+
+- `src/modules/search/`：封装搜索输入、结果和快捷键逻辑，配合 `useSearchWidget` 统一管理查询状态与实体定位。
+- `src/modules/topicPanel/`：托管专题面板的展示与操作，通过 `useTopicPanel` 将图层开关、标注和 3D Tiles 控制收敛为可复用 API。
+- `src/modules/infoPanel/`：信息面板纯视图化，状态由 `useInfoPanel` 管理，避免组件间的临时事件耦合。
+- `src/modules/ui/UiFeedbackHost.vue`：提供 Toast 与全局加载遮罩展示，依赖新的 `useUiFeedback`。
+- `src/composables/useShellLayout.ts`：集中管理全局快捷键与面板可见性，同步 Topic/Measure/Info 面板状态。
+
+> 若需扩展新的交互模块，优先在 `src/modules/` 下创建视图组件，并在 `src/composables/` 中提供对应的组合式 API。这样可以确保 CesiumView 仅承担编排职责。
+

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div ref="cesiumContainer" class="cesium-container">
     <!-- 顶部标题栏（仿 Web AppBuilder FoldableTheme） -->
     <div class="app-header">
@@ -9,13 +9,13 @@
         </div>
       </div>
       <div class="app-header-right">
-        <input class="app-search" type="text" placeholder="搜索地址/地名..." />
+        <SearchWidget :controller="searchController" class="app-search-widget" />
         <!-- 使用文字版本的重置按钮，添加点击效果 -->
         <div class="app-header-icon clickable" title="重置视图" @click="resetView" @mousedown="handleResetClick">
           <span class="reset-text">重置</span>
         </div>
-        <div class="app-header-icon clickable" :class="{ active: topicPanelVisible }" title="专题数据" @click.stop="toggleTopicPanel"><img class="app-icon-img" src="/list_icon.png" alt="list" /></div>
-        <div class="app-header-icon clickable" :class="{ active: measurePanelVisible }" title="量算工具" @click.stop="toggleMeasurePanel"><img class="app-icon-img" src="/guage_icon.png" alt="gauge" /></div>
+        <div class="app-header-icon clickable" :class="{ active: topicPanel.visible.value }" title="专题面板" @click.stop="handleTopicPanelToggle"><img class="app-icon-img" src="/list_icon.png" alt="list" /></div>
+        <div class="app-header-icon clickable" :class="{ active: measurePanelVisible }" title="测量工具" @click.stop="toggleMeasurePanel"><img class="app-icon-img" src="/guage_icon.png" alt="gauge" /></div>
       </div>
     </div>
 
@@ -82,89 +82,13 @@
       </div>
     </div>
 
-    <!-- 专题数据面板 -->
-    <div v-if="topicPanelVisible" class="topic-panel">
-      <div class="topic-header">
-        <div class="title">专题数据</div>
-        <button class="icon-btn" @click="topicPanelVisible = false">×</button>
-      </div>
-      <div class="topic-body">
-        <!-- 行政分级  👁 -->
-        <div class="topic-group">
-          <div class="group-head" @click="topicState.groups.adminOpen = !topicState.groups.adminOpen">
-            <span class="caret">{{ topicState.groups.adminOpen ? '▾' : '▸' }}</span>
-            <span class="group-title">区划地名</span>
-          </div>
-          <div v-show="topicState.groups.adminOpen" class="group-content">
-            <div class="topic-item" :class="{ disabled: !topicState.lod.district, active: currentActiveLayer === 'district' || currentActiveLayer?.value === 'district' }">
-              <div class="label">区县</div>
-              <div class="actions">
-                <!-- <button class="act-btn" @click.stop="toggleLod('district')">{{ topicState.lod.district ? '🟦' : '⬜' }}</button> -->
-                <button class="act-btn" @click.stop="toggleLabel('district')">{{ topicState.labels?.district ? '🔤' : '🚫' }}</button>
-                <button class="act-btn" @click.stop="toggleLayerVisible('district')">{{ topicState.layerVisible?.district ? '🧩' : '🚫' }}</button>
-              </div>
-            </div>
-            <div class="topic-item" :class="{ disabled: !topicState.lod.township, active: currentActiveLayer === 'township' || currentActiveLayer?.value === 'township' }">
-              <div class="label">街道乡镇</div>
-              <div class="actions">
-                <!-- <button class="act-btn" @click.stop="toggleLod('township')">{{ topicState.lod.township ? '🟦' : '⬜' }}</button> -->
-                <button class="act-btn" @click.stop="toggleLabel('township')">{{ topicState.labels?.township ? '🔤' : '🚫' }}</button>
-                <button class="act-btn" @click.stop="toggleLayerVisible('township')">{{ topicState.layerVisible?.township ? '🧩' : '🚫' }}</button>
-              </div>
-            </div>
-            <div class="topic-item" :class="{ disabled: !topicState.lod.community, active: currentActiveLayer === 'community' || currentActiveLayer?.value === 'community' }">
-              <div class="label">社区</div>
-              <div class="actions">
-                <!-- <button class="act-btn" @click.stop="toggleLod('community')">{{ topicState.lod.community ? '🟦' : '⬜' }}</button> -->
-                <button class="act-btn" @click.stop="toggleLabel('community')">{{ topicState.labels?.community ? '🔤' : '🚫' }}</button>
-                <button class="act-btn" @click.stop="toggleLayerVisible('community')">{{ topicState.layerVisible?.community ? '🧩' : '🚫' }}</button>
-              </div>
-            </div>
-            <div class="topic-item" :class="{ disabled: !topicState.lod.grid, active: currentActiveLayer === 'grid' || currentActiveLayer?.value === 'grid' }">
-              <div class="label">地名</div>
-              <div class="actions">
-                <!-- <button class="act-btn" @click.stop="toggleLod('grid')">{{ topicState.lod.grid ? '🟦' : '⬜' }}</button> -->
-                <button class="act-btn" @click.stop="toggleLabel('grid')">{{ topicState.labels?.grid ? '🔤' : '🚫' }}</button>
-                <button class="act-btn" @click.stop="toggleLayerVisible('grid')">{{ topicState.layerVisible?.grid ? '🧩' : '🚫' }}</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- 三维与地形 -->
-        <div class="topic-group">
-          <div class="topic-item">
-            <div class="label">实景三维模型</div>
-            <div class="actions">
-              <button class="act-btn" :class="{ active: tilesetVisible }" @click="toggleTileset">{{ tilesetVisible ? '隐藏三维模型' : '显示三维模型' }}</button>
-            </div>
-          </div></div>
-
-        <div class="divider"></div>
-
-        <!-- 预留专题条目（未接入） -->
-        <!-- <div class="topic-group">
-          <div class="topic-item disabled"><div class="label">道路红线</div><div class="actions"><span class="muted">未接入</span></div></div>
-          <div class="topic-item disabled"><div class="label">市级国土空间总体规划</div><div class="actions"><span class="muted">未接入</span></div></div>
-        </div> -->
-      </div>
-    </div>
+    <TopicPanel :controller="topicPanel" />
 
     <!-- 原有浮动工具栏（保留功能不变） -->
     <!-- <div class="floating-toolbar">
       <button class="ft-btn" @click="resetView">重置视图</button> -->
-      <!-- 新增：DEM地形开关（低耦合，便于删除） -->
-    
-    <!-- 新增：信息面板 -->
-    <div v-if="interactionState.infoPanelVisible" class="info-panel">
-      <div class="info-panel-header">
-        <div class="title">详细信息</div>
-        <button class="close-btn" @click="closeInfoPanel">×</button>
-      </div>
-      <div class="info-panel-body" v-html="interactionState.infoContent"></div>
-    </div>
+    <InfoPanel :controller="infoPanel" />
+    <UiFeedbackHost />
   </div>
 </template>
 
@@ -172,6 +96,15 @@
 import { onMounted, onUnmounted, ref, reactive, computed } from 'vue';
 import * as Cesium from 'cesium';
 
+import { SearchWidget } from '../modules/search';
+import TopicPanel from '../modules/topicPanel/index.vue';
+import InfoPanel from '../modules/infoPanel/index.vue';
+import UiFeedbackHost from '../modules/ui/UiFeedbackHost.vue';
+import { useSearchWidget } from '../composables/useSearchWidget';
+import { useTopicPanel } from '../composables/useTopicPanel';
+import { useInfoPanel } from '../composables/useInfoPanel';
+import { useUiFeedback } from '../composables/useUiFeedback';
+import { useShellLayout } from '../composables/useShellLayout';
 import { installRegionalClipping } from '../utils/tilesetClipping';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { useCesiumStore } from '../stores/cesiumStore';
@@ -187,8 +120,7 @@ import { useBasemapControl } from '../composables/useBasemapControl';
 
 // 响应式状态
 const cesiumContainer = ref(null);
-const topicPanelVisible = ref(false);
-
+ 
 const DEBUG_LOG = false;
 const logger = (...args) => { if (DEBUG_LOG) console.log(...args); };
 const debugLog = logger;
@@ -216,36 +148,6 @@ const {
   logger
 });
 
-const {
-  measurePanelVisible,
-  activeMeasureTab,
-  measureUnit,
-  isMeasurementActive,
-  showClearButton,
-  measurementPoints,
-  totalDistance,
-  totalDistance3D,
-  totalVerticalDistance,
-  areaPoints,
-  areaSquareMeters,
-  areaPerimeterMeters,
-  toggleMeasurePanel,
-  switchMeasureTab,
-  restartMeasurement,
-  clearMeasurement,
-  clearAreaMeasurement,
-  formatDistance,
-  formatArea
-} = useMeasurementTools({
-  Cesium,
-  cesiumContainer,
-  getViewer: () => viewer,
-  topicPanelVisible,
-  isCanvasRenderable,
-  requestRender: () => viewer?.scene?.requestRender?.(),
-  hideGridBlocksForMeasurementIfNeeded,
-  restoreGridBlocksAfterMeasurement
-});
 
 // 专题面板状态与开关
 const topicState = reactive({
@@ -255,17 +157,10 @@ const topicState = reactive({
   layerVisible: { district: true, township: true, community: true, grid: true }
 });
 
-function toggleTopicPanel(event) {
-  if (event) {
-    event.preventDefault();
-    event.stopPropagation();
-  }
-  topicPanelVisible.value = !topicPanelVisible.value;
-  if (topicPanelVisible.value) measurePanelVisible.value = false;
-}
 
 const tilesetAllowed = ref(true);
 const lodGeojsonEnabled = ref(true);
+const tilesetVisible = ref(true);
 
 const showBuildings = ref(false);
 const showDistricts = ref(false);
@@ -337,6 +232,92 @@ const {
   requestSceneRender: () => viewer?.scene?.requestRender?.(),
   setupEntityInteraction
 });
+
+const uiFeedback = useUiFeedback();
+
+const searchController = useSearchWidget({
+  searchQuery,
+  searchResults,
+  searchFilter,
+  searchInGeojsonLayers,
+  highlightEntity,
+  notify: uiFeedback.notify
+});
+
+const topicPanel = useTopicPanel({
+  topicState,
+  currentActiveLayer,
+  toggleLayerVisible,
+  toggleLabel,
+  toggleLod,
+  refreshLayers: updateGeojsonLOD,
+  tilesetVisible,
+  toggleTileset
+});
+
+const infoPanel = useInfoPanel();
+
+const {
+  measurePanelVisible,
+  activeMeasureTab,
+  measureUnit,
+  isMeasurementActive,
+  showClearButton,
+  measurementPoints,
+  totalDistance,
+  totalDistance3D,
+  totalVerticalDistance,
+  areaPoints,
+  areaSquareMeters,
+  areaPerimeterMeters,
+  toggleMeasurePanel,
+  switchMeasureTab,
+  restartMeasurement,
+  clearMeasurement,
+  clearAreaMeasurement,
+  formatDistance,
+  formatArea
+} = useMeasurementTools({
+  Cesium,
+  cesiumContainer,
+  getViewer: () => viewer,
+  topicPanelVisible: topicPanel.visible,
+  isCanvasRenderable,
+  requestRender: () => viewer?.scene?.requestRender?.(),
+  hideGridBlocksForMeasurementIfNeeded,
+  restoreGridBlocksAfterMeasurement
+});
+
+const shellLayout = useShellLayout();
+shellLayout.registerPanel('topic', topicPanel.visible);
+shellLayout.registerPanel('measure', measurePanelVisible);
+shellLayout.registerPanel('info', infoPanel.visible);
+shellLayout.registerShortcut('Escape', (event) => {
+  if (infoPanel.visible.value) {
+    infoPanel.close();
+    event.preventDefault();
+    return;
+  }
+  if (topicPanel.visible.value) {
+    topicPanel.closeTopic();
+    event.preventDefault();
+  }
+});
+shellLayout.registerShortcut('t', () => {
+  handleTopicPanelToggle();
+});
+
+function handleTopicPanelToggle(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  const next = !topicPanel.visible.value;
+  topicPanel.visible.value = next;
+  if (next) {
+    measurePanelVisible.value = false;
+  }
+}
 
 const {
   isCameraMoving,
@@ -975,7 +956,6 @@ onMounted(async () => {
   
   // 初始化Cesium（等待完成后再绑定事件）
   await initializeCesium();
-    try { attachSearchBox && attachSearchBox(); } catch (_) {}
     try { setupCesiumEventHandlers && setupCesiumEventHandlers(); } catch (_) {} // rebind after restart
   
   // 添加网络状态监听
@@ -983,7 +963,6 @@ onMounted(async () => {
   window.addEventListener('offline', handleNetworkChange);
 
   // 绑定搜索框
-  attachSearchBox();
   
   // 初始化完成后再绑定全局事件处理器
   setupCesiumEventHandlers();
@@ -1048,7 +1027,6 @@ function afterViewerRestart(nextViewer) {
   }
   installCameraHooks();
   handleCameraIdle();
-  try { attachSearchBox && attachSearchBox(); } catch (_) {}
   try { setupCesiumEventHandlers && setupCesiumEventHandlers(); } catch (_) {}
 }
 
@@ -1083,424 +1061,6 @@ function toggleForceTilesMode() {
 // 新增：一键加载 3857 ArcGIS 地形（WebMercator），低耦合、易删除
 
 // 新增：懒加载并应用样式的 GeoJSON 数据源（集成自动标注）
-function ensureSearchWrapper(input) {
-  // 包裹器与图标/清空按钮
-  let wrapper = input.closest('.app-search-wrapper');
-  if (wrapper) return wrapper;
-  wrapper = document.createElement('div');
-  wrapper.className = 'app-search-wrapper';
-  wrapper.style.position = 'relative';
-  wrapper.style.display = 'block';
-  wrapper.style.width = '100%';
-
-  // 插入到原位置
-  input.parentNode.insertBefore(wrapper, input);
-  wrapper.appendChild(input);
-
-  // 现代样式
-  input.style.width = '100%';
-  input.style.borderRadius = '18px';
-  input.style.border = '1px solid rgba(255,255,255,0.35)';
-  input.style.background = 'rgba(0,0,0,0.25)';
-  input.style.color = '#fff';
-  input.style.padding = '8px 64px 8px 34px';
-  input.style.outline = 'none';
-  input.style.transition = 'box-shadow 0.15s ease, border-color 0.15s ease';
-
-  input.addEventListener('focus', () => {
-    input.style.borderColor = '#66bfff';
-    input.style.boxShadow = '0 0 0 3px rgba(102,191,255,0.25)';
-  });
-  input.addEventListener('blur', () => {
-    input.style.borderColor = 'rgba(255,255,255,0.35)';
-    input.style.boxShadow = 'none';
-  });
-
-  // 放大镜图标
-  const icon = document.createElement('div');
-  icon.className = 'app-search-icon';
-  icon.style.position = 'absolute';
-  icon.style.left = '12px';
-  icon.style.top = '45%';
-  icon.style.transform = 'translateY(-50%)';
-  icon.style.width = '16px';
-  icon.style.height = '16px';
-  icon.style.opacity = '0.8';
-  icon.style.pointerEvents = 'auto';
-  icon.style.cursor = 'pointer';
-  icon.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff"><path opacity=".6" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 5 1.5-1.5-5-5zM9.5 14C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>';
-  icon.addEventListener('click', async () => {
-    try {
-      const val = String(input.value || '').trim();
-      if (!val) { closeSearchResults(); closeSearchToast(); return; }
-      const res = await searchInGeojsonLayers(val);
-      const total = (res.district?.length || 0) + (res.township?.length || 0) + (res.community?.length || 0) + (res.grid?.length || 0);
-      if (total === 0) { closeSearchResults(); showSearchToast(input, '未找到匹配结果'); return; }
-      renderSearchResultsDropdown(input, res);
-    } catch (_) {}
-  });
-  wrapper.appendChild(icon);
-
-  // 清空按钮
-  const clear = document.createElement('button');
-  clear.type = 'button';
-  clear.className = 'app-search-clear';
-  clear.textContent = '×';
-  clear.style.position = 'absolute';
-  clear.style.right = '8px';
-  clear.style.top = '50%';
-  clear.style.transform = 'translateY(-50%)';
-  clear.style.width = '20px';
-  clear.style.height = '20px';
-  clear.style.border = 'none';
-  clear.style.borderRadius = '50%';
-  clear.style.background = 'rgba(255,255,255,0.2)';
-  clear.style.color = '#fff';
-  clear.style.cursor = 'pointer';
-  clear.style.display = 'none';
-  clear.addEventListener('mouseenter', () => clear.style.background = 'rgba(255,255,255,0.35)');
-  clear.addEventListener('mouseleave', () => clear.style.background = 'rgba(255,255,255,0.2)');
-  clear.addEventListener('click', () => { input.value = ''; input.dispatchEvent(new Event('input')); input.focus(); });
-  wrapper.appendChild(clear);
-
-  input.addEventListener('input', () => {
-    clear.style.display = input.value ? 'block' : 'none';
-  });
-
-  return wrapper;
-}
-
-// 键盘导航状态
-let dropdownActiveIndex = -1;
-let dropdownFlatItems = [];
-
-function closeSearchResults(container) {
-  try {
-    if (!container) container = document.querySelector('.app-search-results');
-    if (!container) return;
-    if (container.__outsideHandler) {
-      document.removeEventListener('mousedown', container.__outsideHandler, true);
-      container.__outsideHandler = null;
-    }
-    if (container.parentNode) {
-      container.parentNode.removeChild(container);
-    } else {
-      container.innerHTML = '';
-    }
-  } catch (_) {}
-}
-
-function closeSearchToast() {
-  try {
-    const toast = document.querySelector('.app-search-toast');
-    if (toast) {
-      if (toast.__timer) { clearTimeout(toast.__timer); toast.__timer = null; }
-      toast.parentNode && toast.parentNode.removeChild(toast);
-    }
-  } catch (_) {}
-}
-
-function showSearchToast(anchorInput, text) {
-  try {
-    closeSearchToast();
-    if (!anchorInput) return;
-    const rect = anchorInput.getBoundingClientRect();
-    const toast = document.createElement('div');
-    toast.className = 'app-search-toast';
-    toast.textContent = text || '未找到匹配结果';
-    toast.style.position = 'absolute';
-    toast.style.zIndex = '1300';
-    toast.style.left = `${rect.left + window.scrollX}px`;
-    toast.style.top = `${rect.bottom + 6 + window.scrollY}px`;
-    toast.style.padding = '6px 10px';
-    toast.style.borderRadius = '8px';
-    toast.style.background = 'rgba(0,0,0,0.85)';
-    toast.style.color = '#fff';
-    toast.style.fontSize = '12px';
-    toast.style.border = '1px solid rgba(255,255,255,0.15)';
-    toast.style.boxShadow = '0 2px 8px rgba(0,0,0,0.35)';
-    document.body.appendChild(toast);
-    toast.__timer = setTimeout(() => {
-      try { toast.parentNode && toast.parentNode.removeChild(toast); } catch(_) {}
-    }, 1500);
-  } catch (_) {}
-}
-
-function installOutsideClickDismiss(anchorInput, container) {
-  if (!anchorInput || !container) return;
-  if (container.__outsideHandler) return;
-  const wrapper = anchorInput.closest('.app-search-wrapper') || anchorInput;
-  const handler = (e) => {
-    const target = e.target;
-    const isInDropdown = container.contains(target);
-    const isInWrapper = wrapper && wrapper.contains(target);
-    if (!isInDropdown && !isInWrapper) {
-      closeSearchResults(container);
-      closeSearchToast();
-    }
-  };
-  container.__outsideHandler = handler;
-  document.addEventListener('mousedown', handler, true);
-}
-
-// 修改搜索结果渲染函数
-function renderSearchResultsDropdown(anchorInput, results) {
-  if (!anchorInput) return;
-  let container = document.querySelector('.app-search-results');
-  if (!container) {
-    container = createElement('ul', 'app-search-results');
-    container.style.position = 'absolute';
-    container.style.zIndex = '1200';
-    container.style.listStyle = 'none';
-    container.style.margin = '6px 0 0 0';
-    container.style.padding = '8px';
-    container.style.background = 'rgba(0,0,0,0.85)';
-    container.style.color = '#fff';
-    container.style.maxHeight = '260px';
-    container.style.overflowY = 'auto';
-    container.style.minWidth = '320px';
-    container.style.border = '1px solid rgba(255,255,255,0.15)';
-    container.style.borderRadius = '10px';
-    document.body.appendChild(container);
-  }
-  const rect = anchorInput.getBoundingClientRect();
-  container.style.left = `${rect.left + window.scrollX}px`;
-  container.style.top = `${rect.bottom + window.scrollY}px`;
-  installOutsideClickDismiss(anchorInput, container);
-  container.innerHTML = '';
-  dropdownActiveIndex = -1;
-  dropdownFlatItems = [];
-
-  // 过滤层级切换条
-  const toolbar = createElement('div');
-  toolbar.style.display = 'flex';
-  toolbar.style.gap = '6px';
-  toolbar.style.padding = '2px 2px 6px 2px';
-  const mkToggle = (label, key) => {
-    const b = createElement('button');
-    b.type = 'button';
-    b.textContent = label;
-    b.style.border = '1px solid rgba(255,255,255,0.25)';
-    b.style.borderRadius = '14px';
-    b.style.padding = '4px 10px';
-    b.style.background = searchFilter[key] ? 'rgba(102,191,255,0.25)' : 'rgba(255,255,255,0.12)';
-    b.style.color = '#fff';
-    b.style.cursor = 'pointer';
-    b.addEventListener('click', () => { searchFilter[key] = !searchFilter[key]; b.style.background = searchFilter[key] ? 'rgba(102,191,255,0.25)' : 'rgba(255,255,255,0.12)'; anchorInput.dispatchEvent(new Event('input')); });
-    return b;
-  };
-  // 移除"区县"筛选按钮
-  // toolbar.appendChild(mkToggle('区县', 'district'));
-  toolbar.appendChild(mkToggle('乡镇/街道', 'township'));
-  toolbar.appendChild(mkToggle('社区', 'community'));
-  toolbar.appendChild(mkToggle('网格', 'grid'));
-  container.appendChild(toolbar);
-
-  const makeTitle = (text) => {
-    const li = createElement('li');
-    li.textContent = text;
-    li.style.fontWeight = '600';
-    li.style.padding = '6px 6px 4px 6px';
-    li.style.opacity = '0.9';
-    return li;
-  };
-  
-  // 修改makeItem函数，添加层级标识和序号
-  const makeItem = (item, index) => {
-    const li = createElement('li');
-    
-    // 创建主要内容区域
-    const mainContent = createElement('div');
-    mainContent.style.display = 'flex';
-    mainContent.style.justifyContent = 'space-between';
-    mainContent.style.alignItems = 'center';
-    mainContent.style.width = '100%';
-    
-    // 左侧：名称 + 层级标识
-    const leftContent = createElement('div');
-    leftContent.style.display = 'flex';
-    leftContent.style.flexDirection = 'column';
-    leftContent.style.flex = '1';
-    
-    // 名称
-    const nameSpan = createElement('span');
-    nameSpan.textContent = item.name;
-    nameSpan.style.fontWeight = '500';
-    nameSpan.style.fontSize = '14px';
-    
-    // 层级标识
-    const layerSpan = createElement('span');
-    const layerNames = {
-      'district': '区县',
-      'township': '乡镇/街道', 
-      'community': '社区',
-      'grid': '网格'
-    };
-    layerSpan.textContent = layerNames[item.layerKey] || item.layerKey;
-    layerSpan.style.fontSize = '12px';
-    layerSpan.style.opacity = '0.7';
-    layerSpan.style.marginTop = '2px';
-    
-    leftContent.appendChild(nameSpan);
-    leftContent.appendChild(layerSpan);
-    
-    // 右侧：序号标识
-    const rightContent = createElement('div');
-    rightContent.style.display = 'flex';
-    rightContent.style.alignItems = 'center';
-    rightContent.style.gap = '8px';
-    
-    // 序号标识
-    const indexSpan = createElement('span');
-    indexSpan.textContent = `#${index + 1}`;
-    indexSpan.style.fontSize = '11px';
-    indexSpan.style.opacity = '0.6';
-    indexSpan.style.background = 'rgba(255,255,255,0.1)';
-    indexSpan.style.padding = '2px 6px';
-    indexSpan.style.borderRadius = '10px';
-    
-    rightContent.appendChild(indexSpan);
-    
-    mainContent.appendChild(leftContent);
-    mainContent.appendChild(rightContent);
-    li.appendChild(mainContent);
-    
-    li.style.cursor = 'pointer';
-    li.style.padding = '8px 10px';
-    li.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
-    li.dataset.__idx = String(dropdownFlatItems.length);
-    
-    li.addEventListener('click', () => { 
-      try { 
-        highlightEntity(item.entity, { layerKey: item.layerKey }); 
-      } catch {}; 
-      closeSearchResults(container); 
-    });
-    li.addEventListener('mouseenter', () => { setActive(parseInt(li.dataset.__idx, 10)); });
-    li.addEventListener('mouseleave', () => { setActive(-1); });
-    dropdownFlatItems.push({ li, item });
-    return li;
-  };
-  
-  const setActive = (idx) => {
-    dropdownActiveIndex = idx;
-    dropdownFlatItems.forEach((o, i) => { 
-      o.li.style.background = (i === dropdownActiveIndex) ? 'rgba(255,255,255,0.12)' : 'transparent'; 
-    });
-    if (idx >= 0) {
-      dropdownFlatItems[idx].li.scrollIntoView({ block: 'nearest' });
-    }
-  };
-
-  const hasDistrict = searchFilter.district && results.district && results.district.length > 0;
-  const hasTownship = searchFilter.township && results.township && results.township.length > 0;
-  const hasCommunity = searchFilter.community && results.community && results.community.length > 0;
-  const hasGrid = searchFilter.grid && results.grid && results.grid.length > 0;
-
-  if (!hasDistrict && !hasTownship && !hasCommunity && !hasGrid) {
-    const empty = createElement('li');
-    empty.textContent = '无匹配结果';
-    empty.style.opacity = '0.8';
-    empty.style.padding = '6px 8px';
-    container.appendChild(empty);
-    return;
-  }
-
-  let globalIndex = 0;
-
-  if (hasDistrict) {
-    container.appendChild(makeTitle(`区县（${results.district.length}）`));
-    results.district.slice(0, 100).forEach((it, localIndex) => {
-      container.appendChild(makeItem(it, globalIndex++));
-    });
-  }
-  if (hasTownship) {
-    container.appendChild(makeTitle(`乡镇/街道（${results.township.length}）`));
-    results.township.slice(0, 100).forEach((it, localIndex) => {
-      container.appendChild(makeItem(it, globalIndex++));
-    });
-  }
-  if (hasCommunity) {
-    container.appendChild(makeTitle(`社区（${results.community.length}）`));
-    results.community.slice(0, 100).forEach((it, localIndex) => {
-      container.appendChild(makeItem(it, globalIndex++));
-    });
-  }
-  if (hasGrid) {
-    container.appendChild(makeTitle(`网格（${results.grid.length}）`));
-    results.grid.slice(0, 100).forEach((it, localIndex) => {
-      container.appendChild(makeItem(it, globalIndex++));
-    });
-  }
-
-  // 附加键盘导航到输入框事件
-  if (!anchorInput.__searchDropdownKeybound) {
-    anchorInput.addEventListener('keydown', (e) => {
-      if (!dropdownFlatItems.length) return;
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        const next = dropdownActiveIndex + 1 >= dropdownFlatItems.length ? 0 : dropdownActiveIndex + 1;
-        setActive(next);
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        const prev = dropdownActiveIndex - 1 < 0 ? dropdownFlatItems.length - 1 : dropdownActiveIndex - 1;
-        setActive(prev);
-      } else if (e.key === 'Enter') {
-        if (dropdownActiveIndex >= 0) {
-          e.preventDefault();
-          const chosen = dropdownFlatItems[dropdownActiveIndex];
-          try { highlightEntity(chosen.item.entity, { layerKey: chosen.item.layerKey }); } catch {}
-          closeSearchResults(container);
-        }
-      } else if (e.key === 'Escape') {
-        closeSearchResults(container);
-      }
-    });
-    anchorInput.__searchDropdownKeybound = true;
-  }
-}
-
-function attachSearchBox() {
-  try {
-    const input = document.querySelector('.app-search');
-    if (!input) return;
-    ensureSearchWrapper(input);
-    let debounceTimer = null;
-    input.addEventListener('input', async (e) => {
-      const raw = String(e.target.value || '');
-      const val = raw.trim();
-      if (!val) {
-      closeSearchResults();
-      closeSearchToast();
-      return;
-    }
-      const res = await searchInGeojsonLayers(val);
-      const total = (res.district?.length || 0) + (res.township?.length || 0) + (res.community?.length || 0) + (res.grid?.length || 0);
-      if (total === 0) {
-      closeSearchResults();
-      showSearchToast(input, '未找到匹配结果');
-      return;
-    }
-      renderSearchResultsDropdown(input, res);
-    });
-    input.addEventListener('keydown', async (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        const val = String(e.target.value || '').trim();
-        if (!val) { closeSearchResults(); return; }
-        const res = await searchInGeojsonLayers(val);
-        const total = (res.district?.length || 0) + (res.township?.length || 0) + (res.community?.length || 0) + (res.grid?.length || 0);
-        if (total === 0) { closeSearchResults(); return; }
-        renderSearchResultsDropdown(input, res);
-      }
-      if (e.key === 'Escape') {
-        closeSearchResults();
-      }
-    });
-  } catch (e) {
-    console.warn('attachSearchBox error:', e);
-  }
-}
 
 function createElement(tag, className) {
   const el = document.createElement(tag);
@@ -1541,14 +1101,6 @@ function handleResetClick(event) {
 }
 
 // 新增：交互状态管理
-const interactionState = reactive({
-  hoveredEntity: null,
-  hoveredLayer: null,
-  clickedEntity: null,
-  clickedLayer: null,
-  infoPanelVisible: false,
-  infoContent: ''
-});
 
 // 新增：信息面板显示
 function showEntityInfo(entity, layerKey) {
@@ -1606,10 +1158,7 @@ function showEntityInfo(entity, layerKey) {
     }
   }
   
-  interactionState.infoContent = info;
-  interactionState.infoPanelVisible = true;
-  interactionState.clickedEntity = entity;
-  interactionState.clickedLayer = layerKey;
+  infoPanel.open({ content: info, entity, layerKey });
 }
 
 // 新增：获取层级字段
@@ -1691,8 +1240,7 @@ function setupCesiumEventHandlers() {
           showHoverLabel(entity, layerKey);
         }
         
-        interactionState.hoveredEntity = entity;
-        interactionState.hoveredLayer = layerKey;
+        infoPanel.setHover({ entity, layerKey });
       }
     }
   }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
@@ -1723,8 +1271,9 @@ function applyHoverStyle(entity, hoverStyle) {
 
 // 修改：清除悬停效果函数
 function clearHoverEffect() {
-  if (interactionState.hoveredEntity && interactionState.hoveredEntity._originalStyle) {
-    const entity = interactionState.hoveredEntity;
+  const hovered = infoPanel.hovered.value?.entity;
+  if (hovered && hovered._originalStyle) {
+    const entity = hovered;
     const original = entity._originalStyle;
     
     entity.polygon.material = original.material;
@@ -1733,10 +1282,12 @@ function clearHoverEffect() {
     entity.polygon.outlineWidth = original.outlineWidth;
   }
   
-  // 清除悬停标注
-  if (interactionState.hoveredEntity) {
-    clearHoverLabel(interactionState.hoveredEntity);
+  // �����ͣ��ע
+  if (hovered) {
+    clearHoverLabel(hovered);
   }
+
+  infoPanel.clearHover();
 }
 
 // 修改：显示悬停标注函数
@@ -1778,12 +1329,6 @@ function clearHoverLabel(entity) {
 }
 
 // 新增：关闭信息面板
-function closeInfoPanel() {
-  interactionState.infoPanelVisible = false;
-  interactionState.infoContent = '';
-  interactionState.clickedEntity = null;
-  interactionState.clickedLayer = null;
-}
 
 // 新增：点击拖拽检测状态
 const clickDragState = reactive({
@@ -1878,7 +1423,6 @@ async function toggleTileset() {
 
 // 网格层级的 3D Tiles 模型
 let gridTileset = null;
-const tilesetVisible = ref(true);
 // 新增：3D Tiles 加载允许总开关（按钮关闭时禁止 LOD 触发加载/显示）
 // 新增：信息面板/高亮跳转的独立飞行高度（与 LOD 阈值解耦，单位：米）
 // 测量期间临时隐藏网格层"板块"并在清除时恢复（通过 toggleLayerVisible 保留标注）
@@ -1969,25 +1513,13 @@ function restoreGridBlocksAfterMeasurement() {
 .app-header-icon.clickable.active { background-color: #004271; }
 .app-header-icon:first-child { border-left: 1px solid #323e4f; }
 
-/* 搜索框样式 */
-.app-search {
+.app-search-widget {
   width: 100%;
-  max-width: 260px;
-  min-width: 0;
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 4px;
-  border: 1px solid rgba(255,255,255,0.2);
-  background: rgba(255,255,255,0.15);
-  color: #fff;
-  outline: none;
-  box-sizing: border-box;
-  position: relative;
 }
-.app-search::placeholder { color: rgba(255,255,255,0.75); }
+.app-icon-img { width: 22px; height: 22px; display: block; pointer-events: none; }
+/* 搜索框样式 */
 
 /* 头部图标内的图片尺寸 */
-.app-icon-img { width: 22px; height: 22px; display: block; pointer-events: none; }
 
 /* 四角控件容器 */
 .ui-corners { position: absolute; inset: 40px 0 0 0; z-index: 1050; pointer-events: none; }
@@ -2107,8 +1639,7 @@ function restoreGridBlocksAfterMeasurement() {
     grid-template-columns: minmax(0,1fr) 36px 36px 36px; 
     gap: 6px; 
   }
-  .app-search { max-width: 220px; }
-  .floating-toolbar { top: 56px; left: 10px; gap: 6px; padding: 8px; }
+    .floating-toolbar { top: 56px; left: 10px; gap: 6px; padding: 8px; }
   .measure-panel { width: 300px; }
 }
 
@@ -2120,8 +1651,7 @@ function restoreGridBlocksAfterMeasurement() {
     grid-template-columns: minmax(0,1fr) 32px 32px 32px; 
     gap: 4px; 
   }
-  .app-search { height: 26px; max-width: 180px; min-width: 0; box-sizing: border-box; }
-  .floating-toolbar { top: 54px; left: 8px; padding: 6px; border-radius: 8px; }
+    .floating-toolbar { top: 54px; left: 8px; padding: 6px; border-radius: 8px; }
   .ft-btn { padding: 5px 8px; font-size: 12px; }
   .measure-panel { top: 56px; right: 8px; width: 280px; height: calc(100vh - 70px); }
 }
@@ -2132,15 +1662,13 @@ function restoreGridBlocksAfterMeasurement() {
   .app-header-right { 
     grid-template-columns: 1fr 32px 32px 32px; 
   }
-  .app-search { max-width: 140px; }
-  .floating-toolbar { top: auto; bottom: 14px; left: 10px; right: 10px; flex-wrap: nowrap; justify-content: center; }
+    .floating-toolbar { top: auto; bottom: 14px; left: 10px; right: 10px; flex-wrap: nowrap; justify-content: center; }
   .measure-panel { top: auto; bottom: 0; right: 0; left: 0; width: 100%; height: 48vh; border-radius: 12px 12px 0 0; }
   .measure-panel-header { border-radius: 12px 12px 0 0; }
 }
 
 /* 轻微的视觉微调 */
 .app-header-icon { border-radius: 6px; }
-.app-search { backdrop-filter: blur(2px); }
 .floating-toolbar { backdrop-filter: blur(6px); }
 </style>
 

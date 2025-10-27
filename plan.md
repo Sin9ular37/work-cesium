@@ -82,36 +82,38 @@
 
 ---
 
-## 阶段 5 · UI/交互工具模块化
-- **输出**
-  - `src/composables/useSearchWidget.ts` 或 `src/modules/search/index.ts`
-  - `src/modules/topicPanel/index.vue`（可视需求拆成子组件）
+## 阶段 5 —— UI/交互层模块化
+- **目标**
+  - `src/composables/useSearchWidget.ts` 与 `src/modules/search/index.ts`
+  - `src/modules/topicPanel/index.vue` 及关联的侧栏组件
   - `src/modules/infoPanel/index.vue`
-- **任务要点**
-  1. 将 DOM 脚本（搜索框包装、下拉列表、浮动 toast）迁出，改为组件/指令/composable
-  2. 分离 topic panel 和 info panel 的渲染/状态
-  3. 保证基础样式不回归（CSS 按需拆分）
+- **需要实现**
+  1. 将搜索 DOM 控制逻辑拆分为 `useSearchWidget` 组合式 API，整理输入状态、结果列表和高亮流程，向外只暴露 `initSearchWidget`、`destroySearchWidget`、`selectResult` 等方法，并补充类型定义。
+  2. 抽象搜索、专题、信息面板共用的 toast / loading / confirm 交互为 `useUiFeedback`（或同等服务），统一封装 `notify`、`setSpinner`、`confirmAction` 等接口，去除组件内分散的 `setTimeout` 与 `document.querySelector`。
+  3. 将 `topicPanel/index.vue` 的数据拉取、筛选、标签切换拆分到 `useTopicPanel` composable，提供 `openTopic(topicId)`、`closeTopic()`、`refreshTopic()`，并将历史记录、收藏等子区块拆成独立子组件或动态 slot。
+  4. 将 `infoPanel/index.vue` 的实体详情、定位联动挪至 `useInfoPanel`，改造跨组件事件为 mitt/Pinia store，处理面板尺寸记忆、滚动同步、实体高亮释放，补齐可选的批量关闭/清空能力。
+  5. 梳理面板与全局快捷键、折叠状态来源，统一到 `useShellLayout`（或 store)，合并重复的 `window.addEventListener('keydown')` 注册，确保在组件卸载时释放监听。
+  6. 清理样式资源：将搜索、专题、信息面板的 SCSS/CSS 按模块拆分，建立主题变量与字号规范，补充 Storybook/截图或 README 片段供验收参考。
 - **验证**
-  - 搜索建议、键盘导航、toast 提示都可用
-  - 专题面板按钮、信息面板打开关闭正确
-
----
-
-## 阶段 6 · Cesium 初始化与主组件瘦身
-- **输出**
-  - `src/modules/cesium/initViewer.ts`（封装 `initializeCesium`、`restartViewer` 所需依赖）
-  - `CesiumView.vue` 仅保留 orchestrator：引入各 composable，绑定模板
-  - 配套 README 或开发者文档
-- **任务要点**
-  1. 利用前述 composable，将 `CesiumView.vue` 逻辑压缩为 200~300 行内（含模板和样式）
-  2. 清除重复日志/注释、迁移常量、补 TypeScript 类型（若项目允许）
-  3. 整理 `onMounted/onUnmounted` 中的卸载逻辑，确保引用的 disposer 均来自 composable
+  - 搜索流程（输入、定位、清空、切换数据源）全链路无错，地图飞行与 hover 高亮同步。
+  - 专题、信息面板可独立开关并记忆上次状态；重复打开不会残留旧的订阅或定时器。
+  - Toast / loading 遮罩在多路事件触发时互斥显示，路由切换后自动回收；暗/亮主题样式一致。
+## 阶段 6 —— Cesium 初始化与主组件瘦身
+- **目标**
+  - `src/modules/cesium/initViewer.ts`，封装 `initializeCesium`、`restartViewer` 以及 viewer 依赖注入。
+  - `CesiumView.vue`（或同层 orchestrator）瘦身为 orchestrator，仅负责组合 composables 与 UI 容器。
+  - `src/modules/cesium/bootstrap` 目录（如需新增），用于收敛初始化相关的 config/service（相机、地形、资源加载器）。
+- **需要实现**
+  1. 将现有 `initViewer.ts` 拆成纯函数化的初始化流程，注入 Pinia/store、事件总线与 viewer 选项，导出 `createViewerContext`、`installViewerPlugins` 及 disposer。
+  2. 重构 `restartViewer`，统一清理 listener、postProcessStage、DataSource 等副作用，在重建后串联阶段 1~5 的 composable 安装顺序。
+  3. 在 `CesiumView.vue` 中引入 `useCesiumBoot`（或等价）composable，集中管理 onMounted/onUnmounted、响应式参数监听与错误兜底，将组件模板压缩至 200~300 行。
+  4. 为初始化流程补充 TypeScript 类型：定义 `ViewerBootPayload`、`CesiumProviderHooks` 等接口，替换 any/unknown，并将常量迁移至 `src/constants/cesium.ts`。
+  5. 清理 `CesiumView.vue` 内部遗留 console/log 注释，统一改用 `logger`，确保布局/快捷键/主题状态引用阶段 5 的新抽象。
+  6. 更新 README 或新增 `/docs/cesium-bootstrap.md`，记录初始化顺序、覆盖点、自定义 hook 说明，并补充 WebCrypto polyfill、ClippingPlane 兼容等常见问题。
 - **验证**
-  - 全局行为与当前一致
-  - 构建、lint（若有）、基础自动化测试通过
-
----
-
+  - `npm run build`、`npm run lint` 全量通过，Storybook/预编译脚本可运行。
+  - 切换主题、重启 viewer、切换地形/底图后无内存泄漏或未释放监听（可通过日志或 devtools 验证）。
+  - Viewer 初始化失败时展示友好提示，二次尝试可成功恢复。
 ## 阶段 7 · 收尾与性能回归
 - **输出**
   - 最终整理后的代码库
@@ -132,7 +134,7 @@
 - [x] 阶段 2
 - [x] 阶段 3
 - [x] 阶段 4
-- [ ] 阶段 5
+- [x] 阶段 5
 - [ ] 阶段 6
 - [ ] 阶段 7
 
@@ -146,3 +148,5 @@
 - **阶段 2**（2025-10-17）：新增 `src/composables/useGeojsonLod.js`，托管 LOD 层配置、标注创建、视距限额、搜索/高亮等逻辑；`CesiumView.vue` 中移除 400+ 行 LOD/标注函数与状态，仅保留 composable 输出和 UI 交互调用，清理重复常量/导入并保持现有专题面板与搜索行为。
 - **阶段 3**（2025-10-27）：接入 `useCameraControls` 与 `useRenderLifecycle`，在 `CesiumView.vue` 中统一安装/拆卸相机事件与渲染循环控制；清理内联的相机监听、重启、resize 函数并改由 composable 托管 SSE/FXAA/尺寸校验，新增 `handleCameraIdle` 集中驱动 LOD 与显示模式切换。补充 `scripts/build-with-polyfill.js` 与 `scripts/polyfill-webcrypto.cjs` 以在无原生 WebCrypto 的 Node 环境中执行 `npm run build`，同时为缺少 `ClippingPlaneCollection.fromBoundingVolume` 的 Cesium 版本提供降级裁剪方案。
 - **阶段 4**（2025-10-27）：新增 `useTilesetManagement` / `useBasemapControl`，将 3D Tiles 预加载、显隐、区域裁剪与 ArcGIS 底图切换集中封装；`CesiumView.vue` 去除地形与本地离线影像相关逻辑，改由 composable 提供建筑模型与远程底图控制，清理 `toggleTerrain`、`loadLocalImagery` 等函数，并保持缩放触发的 LOD/显示切换。`npm run build` 通过。
+
+- **阶段 5**：2025-10-27 完成搜索/专题/信息面板 UI 模块化，引入 `useSearchWidget`、`useTopicPanel`、`useInfoPanel`、`useUiFeedback` 与 `useShellLayout`，重构 `CesiumView.vue` 仅保留 orchestrator 职责，并新增模块化样式与文档说明。
