@@ -135,7 +135,7 @@
 - [x] 阶段 3
 - [x] 阶段 4
 - [x] 阶段 5
-- [ ] 阶段 6
+- [x] 阶段 6
 - [ ] 阶段 7
 
 > 每完成一个阶段，请勾选对应项并在文件尾部追加“阶段完成纪要”，描述核心变更/风险/下一步计划。
@@ -150,3 +150,4 @@
 - **阶段 4**（2025-10-27）：新增 `useTilesetManagement` / `useBasemapControl`，将 3D Tiles 预加载、显隐、区域裁剪与 ArcGIS 底图切换集中封装；`CesiumView.vue` 去除地形与本地离线影像相关逻辑，改由 composable 提供建筑模型与远程底图控制，清理 `toggleTerrain`、`loadLocalImagery` 等函数，并保持缩放触发的 LOD/显示切换。`npm run build` 通过。
 
 - **阶段 5**：2025-10-27 完成搜索/专题/信息面板 UI 模块化，引入 `useSearchWidget`、`useTopicPanel`、`useInfoPanel`、`useUiFeedback` 与 `useShellLayout`，重构 `CesiumView.vue` 仅保留 orchestrator 职责，并新增模块化样式与文档说明。
+- **阶段 6**（2025-10-27）：新增 `src/modules/cesium/initViewer.ts` 与 `bootstrap/scene.ts`，抽离初始化守卫、场景优化与插件装配；实现 `useCesiumBoot` 组合式 API 并让 `CesiumView.vue` 缩减为 120 行 orchestrator；补充 `src/constants/cesium.ts`、`docs/cesium-bootstrap.md`，同时跑通 `npm run build`（缺少 lint 脚本已记录）。
