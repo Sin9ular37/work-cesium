@@ -1,0 +1,9 @@
+构建与 Cesium 兼容性修复：离线环境可构建 + 区域裁剪降级
+
+- 新增 WebCrypto polyfill 构建脚本（scripts/build-with-polyfill.js、scripts/polyfill-webcrypto.cjs），修复 npm run build 在缺失 crypto.getRandomValues 时失败的问题；
+- 优化 scripts/copy-cesium-assets.js，遇到 EBUSY/EPERM 文件占用时跳过，避免中断构建；
+- tilesetClipping 增加 fromBoundingVolume 缺失时的降级方案（手动生成六面裁剪平面），离线旧版 Cesium 亦可用；
+- 接入 useCameraControls/useRenderLifecycle，移除 CesiumView.vue 内联相机/渲染循环实现并集中安装/拆卸钩子；
+- 修复 useGeojsonLod：引入 LOD_HYSTERESIS、通过 setupEntityInteraction 回调注入实体交互，避免未定义错误；
+- 调整 3D Tiles 预加载判定，避免 readyPromise 误报；
+- 更新 vite.config.js 与 plan.md（阶段3完成纪要与风险说明）。

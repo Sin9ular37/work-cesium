@@ -1,0 +1,23 @@
+{
+  "asset": {
+    "version": "1.0",
+    "type": "TERRAIN"
+  },
+  "root": {
+    "geometricError": 1000,
+    "refine": "REPLACE",
+    "boundingVolume": {
+      "region": [
+        -3.141592653589793,
+        -1.5707963267948966,
+        3.141592653589793,
+        1.5707963267948966,
+        0,
+        1000
+      ]
+    },
+    "content": {
+      "url": "0/0/0.terrain"
+    }
+  }
+}

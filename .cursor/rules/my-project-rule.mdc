@@ -1,0 +1,332 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Cursor 项目规则文件：Vue + Cesium 前端展示页面
+
+## ⚠️ 最高优先级规则：严格离线部署原则
+
+### 离线部署强制要求
+- **本项目必须严格遵循离线部署原则**
+- **此规则具有最高优先级，任何代码修改都必须遵循此原则**
+
+### 代码检查清单
+在编写或修改任何代码时，必须检查：
+是否遵循了离线部署原则？
+
+### 网络访问限制
+禁止：访问任何外部互联网服务
+禁止：使用CDN或外部资源库
+禁止：调用外部API服务
+允许：仅访问局域网内的服务
+项目结构规范
+
+## 项目结构规范
+
+### 文件夹结构
+
+/src
+    /assets       # 静态资源（图片、字体、图标等）
+    /components   # 公共组件
+    /views        # 页面视图组件
+    /router       # 路由配置
+    /store        # 状态管理 (Vuex/Pinia)
+    /utils        # 工具函数、常量、API 请求等
+    /services     # 业务逻辑层（地形服务、地图服务等）
+    /styles       # 全局样式（主题、CSS 变量等）
+    /config       # 配置文件（Cesium配置、环境配置等）
+/public
+    index.html    # 主页面文件
+/tests            # 单元测试
+/dist             # 打包输出
+```
+
+### 路由结构
+- 使用 **Vue Router** 管理页面跳转，遵循 **懒加载** 原则
+- 页面中需要动态加载的模块使用 Vue 的 `async` 异步组件
+- 路由配置示例：
+```js
+const routes = [
+  {
+    path: '/',
+    name: 'Home',
+    component: () => import('@/views/Home.vue'),
+  },
+  {
+    path: '/map',
+    name: 'Map',
+    component: () => import('@/views/Map.vue'),
+  },
+];
+```
+
+## 代码规范
+
+### 命名规范
+- **组件命名**：采用 **PascalCase**（大驼峰命名法），如 `MyComponent.vue`
+- **方法命名**：采用 **camelCase**（小驼峰命名法），如 `loadMapData`
+- **文件命名**：采用 **kebab-case**（小写字母与短横线分隔），如 `map-data-service.js`
+- **CSS 类名**：采用 **BEM** 命名规则，避免类名冲突
+- **常量命名**：采用 **UPPER_SNAKE_CASE**，如 `API_BASE_URL`
+
+### 代码格式
+- 使用 **Prettier** 自动格式化代码，确保代码风格统一
+- 使用 **ESLint** 检查语法和代码风格问题，配置 `eslint-config-airbnb`
+- 统一使用 **双引号** (`"`) 在 JavaScript 和 Vue 文件中
+- 使用 **2 个空格** 进行缩进
+- 行尾不允许有空格
+
+### 注释规范
+- 每个函数、组件都应该有简洁的注释，解释其功能、输入和输出
+- 使用 JSDoc 注释格式：
+```js
+/**
+ * 加载地图数据
+ * @param {Object} params - 配置项
+ * @param {string} params.url - 数据源 URL
+ * @returns {Promise} - 返回地图数据加载的 Promise
+ */
+async function loadMapData(params) {
+  // 逻辑代码...
+}
+```
+
+### 函数长度
+- 单个函数体长度不超过 **50 行**，如果过长拆分成多个小函数
+- 每个函数只做一件事，遵循 **单一职责原则**
+- 避免嵌套超过 3 层
+
+## Cesium API 使用规范
+
+考官方文档 [https://cesium.com/learn/cesiumjs/ref-doc/](https://cesium.com/learn/cesiumjs/ref-doc/)
+- **禁止**：直接使用未经验证的 API 或过时的 API
+- **推荐**：使用最新的 Cesium 版本和 API
+
+### 常用 API 类
+- **Primitive**：用于在场景中表示几何体，支持批处理和实例化渲染
+- **GeometryInstance**：几何体实例，定义结构和位置
+- **Appearance**：外观，定义视觉特性包括材质和渲染状态
+- **Viewer**：Cesium 的主要入口点，管理场景、相机、地形等
+- **Scene**：场景对象，包含所有可视元素
+- **Camera**：相机对象，控制视角和位置
+
+### API 使用原则
+1. **按需导入**：只导入需要的 API，避免加载过多资源
+2. **异步处理**：使用 Promise 或 async/await 处理异步操作
+3. **错误处理**：必须包含 try-catch 错误处理
+4. **资源管理**：及时释放不需要的资源，避免内存泄漏
+5. **性能优化**：使用批处理、实例化等技术提高渲染性能
+
+### 配置示例
+```js
+// 按需导入
+import { Viewer, createWorldTerrain, Primitive, GeometryInstance } from "cesium";
+
+// 异步初始化
+async function initCesium() {
+  try {
+    const viewer = new Viewer("cesiumContainer", {
+      terrainProvider: createWorldTerrain(),
+    });
+    return viewer;
+  } catch (error) {
+    console.error("Cesium 初始化失败:", error);
+  elopers.arcgis.com/rest/services-reference/enterprise/get-started-with-the-services-directory/](https://developers.arcgis.com/rest/services-reference/enterprise/get-started-with-the-services-directory/)
+- **服务目录**：使用 ArcGIS Server Services Directory 浏览和访问服务
+- **RESTful 架构**：遵循 RESTful 设计原则，通过端点访问服务信息
+
+### 服务端点结构
+- **基础端点**：`https://<host>/<context>/rest/services`
+- **服务端点**：`https://<host>/<context>/rest/services/<folderName>/<serviceName>/<ServiceType>`
+- **图层端点**：`https://<host>/<context>/rest/services/<folderName>/<serviceName>/<ServiceType>/<layer>`
+- **资源端点**：`https://<host>/<context>/rest/services/<folderName>/<serviceName>/<ServiceType>/<layer>/<resource>`
+- **操作端点**：`https://<host>/<context>/rest/services/<folderName>/<serviceName>/<ServiceType>/<layer>/<resource>/<operation>`
+
+### 常用服务类型
+- **Map Service**：地图服务，提供地图图层
+- **Feature Service**：要素服务，提供可编辑的矢量数据
+- **Image Service**：影像服务，提供栅格数据
+- **Geocode Service**：地理编码服务，地址解析
+- **Geometry Service**：几何服务，空间分析
+- **Geoprocessing Service**：地理处理服务，空间分析工具
+
+### 请求格式
+- **GET 请求**：用于获取服务信息和执行简单操作
+- **POST 请求**：用于复杂操作和文件上传
+- **参数格式**：`?parameter=value&parameter=value`
+- **JSON 参数**：`parameter={"key": "value"}`
+
+### 响应格式
+- **JSON**：`?f=json`（默认）
+- **PJSON**：`?f=pjson`（美化 JSON）
+- **HTML**：`?f=html`（HTML 视图）
+- **KML**：`?f=kml`（KML 格式）
+
+### 错误处理
+- 检查 HTTP 状态码
+- 处理服务不可用情况
+- 实现重试机制
+- 记录错误日志
+
+### 配置示例
+```js
+// ArcGIS 服务配置
+const arcgisConfig = {
+  baseUrl: 'https://your-server.com/arcgis/rest/services',
+  serviceName: 'your-service',
+  serviceType: 'MapServer',
+  layerId: 0,
+  format: 'json'
+};
+
+// 构建服务 URL
+function buildServiceUrl(config) {
+  return `${config.baseUrl}/${config.serviceName}/${config.serviceType}/${config.layerId}?f=${config.format}`;
+}
+```
+
+## 功能规范
+
+### Cesium 地图初始化
+- 在 `Map.vue` 组件中初始化 Cesium 地图
+- 使用按需导入，避免加载过多资源
+- 必须包含错误处理和资源清理
+
+### 地形服务加载
+- 提供 `loadTerrainData` 函数，用于加载和显示地形
+- 支持多种地形服务提供商
+- 必须包含加载状态和错误处理
+
+### 3D Tiles 加载
+- 使用 Cesium 的 `3DTileset` 来加载和显示建筑或模型数据
+- 支持多种 3D Tiles 格式
+- 必须包含加载状态和错误处理
+
+### 响应式布局
+- 使用 **CSS Grid** 和 **Flexbox** 来设计响应式布局
+- 确保页面在不同屏幕尺寸下都能正确显示
+- 支持移动端和桌面端
+
+### 状态管理
+- 使用 Vuex 或 Pinia 管理全局状态
+- 特别是 Cesium 中的 `viewer`、`terrainProvider` 等状态
+- 必须包含状态同步和更新机制
+
+## 依赖管理
+
+### Cesium
+- 使用 Cesium 的 **npm 版**，确保安装：
+```bash
+npm install cesium
+```
+- 引入 Cesium 时需要确保按需加载：
+```js
+import { Viewer, createWorldTerrain } from "cesium";
+```
+
+### 其他依赖
+- **proj4js**：用来处理坐标系转换
+```bash
+npm install proj4
+```
+- **lerc.js**：用来解码 ArcGIS 返回的 LERC 格式数据
+```bash
+npm install lerc
+```
+
+## 样式规范
+
+### CSS 变量
+- 使用 **CSS 变量** 来管理常用颜色、字体等样式：
+```css
+:root {
+  --primary-color: #2e3d49;
+  --secondary-color: #7d8a92;
+  --font-family: 'Arial', sans-serif;
+}
+```
+
+### 样式模块化
+- 使用 **Scoped CSS** 来避免样式冲突
+- 每个组件的样式都应当局部生效：
+```vue
+<style scoped>
+.map-container {
+  height: 100%;
+}
+</style>
+```
+
+### 响应式设计
+- 使用 **媒体查询** 来实现响应式布局
+- 适配不同设备：
+```css
+@media (max-width: 768px) {
+  .map-container {
+    height: 50vh;
+  }
+}
+```
+
+## 测试规范
+
+### 单元测试
+- 使用 **Jest** 或 **Mocha** 来进行单元测试
+- 确保核心业务逻辑的正确性
+- 测试所有公共函数和 API 接口
+
+### 集成测试
+- 使用 **Cypress** 或 **Nightwatch** 做端到端集成测试
+- 模拟用户操作，确保 Cesium 加载正确
+
+## 部署规范
+
+### 打包
+- 使用 Vue CLI 配置打包，使用 **`--mode production`** 进行生产环境打包
+- 打包时禁用 **source map**，提高性能
+
+### 资源加载优化
+- 使用 **懒加载** 来优化资源加载
+- 采用 **Code Splitting** 和 **Webpack Tree Shaking** 来去除不必要的代码
+
+## 总结
+
+这是你项目的 **前端开发规范**，确保代码一致性、可维护性，并减少冗余。规范遵循 Vue.js 和 Cesium 的最佳实践，确保组件清晰、结构化，增强开发效率。
+
+---
+
+## 自动化构建和部署脚本
+
+### package.json 脚本配置
+```json
+{
+  "scripts": {
+    "dev": "vue-cli-service serve",
+    "build": "vue-cli-service build --mode production",
+    "test": "jest",
+    "test:e2e": "cypress run",
+    "lint": "eslint --ext .js,.vue src",
+    "lint:fix": "eslint --ext .js,.vue src --fix",
+    "format": "prettier --write \"src/**/*.{js,vue,scss,css}\""
+  }
+}
+```
+
+### 环境配置
+- 开发环境：`NODE_ENV=development`
+- 生产环境：`NODE_ENV=production`
+- 测试环境：`NODE_ENV=test`
+
+### 部署流程
+1. 代码提交到 Git 仓库
+2. 自动触发 CI/CD 流程
+3. 运行测试和代码检查
+4. 构建生产版本
+
+5. 部署到服务器
