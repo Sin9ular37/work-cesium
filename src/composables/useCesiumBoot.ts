@@ -540,6 +540,27 @@ function checkZoomLevelAndToggleDisplay() {
     };
   };
 
+  const activeLodLayer = currentActiveLayer?.value ?? null;
+  if (activeLodLayer === 'grid') {
+    clearPendingDisplaySwitch();
+    if (currentDisplay !== 'tiles' || !buildingsTileset.value.show) {
+      logger('[LOD联动] 当前处于网格层，启用 3D Tiles');
+    }
+    ensureModeVisibility('tiles');
+    currentDisplay = 'tiles';
+    return;
+  }
+
+  if (activeLodLayer !== null && activeLodLayer !== 'grid') {
+    clearPendingDisplaySwitch();
+    if (currentDisplay !== 'imagery' || (buildingsTileset.value?.show ?? false)) {
+      logger('[LOD联动] 当前层级非网格，关闭 3D Tiles');
+    }
+    ensureModeVisibility('imagery');
+    currentDisplay = 'imagery';
+    return;
+  }
+
   // 滞回判断：只有跨越成对阈值时才切换，避免在阈值附近抖动
   const wantTiles = distance < DISPLAY_THRESHOLDS.showTilesBelow; // 500米以下显示3D Tiles
   const wantImagery = distance > DISPLAY_THRESHOLDS.hideTilesAbove; // 700米以上隐藏3D Tiles
