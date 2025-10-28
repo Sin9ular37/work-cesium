@@ -101,13 +101,13 @@ import InfoPanel from '../modules/infoPanel/index.vue';
 import UiFeedbackHost from '../modules/ui/UiFeedbackHost.vue';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
-import appLogo from '../assets/icons/app-logo.png';
-import listIcon from '../assets/icons/list_icon.png';
-import gaugeIcon from '../assets/icons/guage_icon.png';
-
 import { useCesiumBoot } from '../composables/useCesiumBoot';
 
 const cesiumContainer = ref<HTMLDivElement | null>(null);
+
+const appLogo = new URL('../assets/icons/app-logo.png', import.meta.url).href;
+const listIcon = new URL('../assets/icons/list_icon.png', import.meta.url).href;
+const gaugeIcon = new URL('../assets/icons/guage_icon.png', import.meta.url).href;
 
 const {
   searchController,

@@ -709,7 +709,7 @@ function computeDistanceByPitchAndVertical(pitchRadians, verticalMeters) {
 
 // 新增：在控制台打印视点到摄影机的直线距离
 function logViewDistance() {
-  if (!DEBUG_LOG) return;
+  if (!logger.enabled) return;
   if (!viewer) return;
   const scene = viewer.scene;
   const camera = viewer.camera;

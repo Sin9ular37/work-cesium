@@ -3,7 +3,7 @@
     <div class="topic-header">
       <div class="title">专题图层</div>
       <div class="header-actions">
-        <button class="icon-btn" type="button" @click="controller.refreshTopic">刷新</button>
+        <!-- <button class="icon-btn" type="button" @click="controller.refreshTopic">刷新</button> -->
         <button class="icon-btn" type="button" @click="controller.closeTopic">×</button>
       </div>
     </div>
@@ -24,14 +24,14 @@
           >
             <div class="label">{{ layer.label }}</div>
             <div class="actions">
-              <button
+              <!-- <button
                 v-if="layer.lodEnabled && controller.toggleLod"
                 class="act-btn"
                 type="button"
                 @click.stop="controller.toggleLod(layer.key)"
               >
                 {{ layer.lodEnabled ? 'LOD' : '启用' }}
-              </button>
+              </button> -->
               <button
                 v-if="layer.labelEnabled !== undefined"
                 class="act-btn"
