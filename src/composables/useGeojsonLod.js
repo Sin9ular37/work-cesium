@@ -21,6 +21,30 @@ export function useGeojsonLod({
   requestSceneRender,
   setupEntityInteraction = () => {}
 }) {
+  const emitLog = (level, ...args) => {
+    try {
+      if (logger && typeof logger[level] === 'function') {
+        logger[level](...args);
+        return;
+      }
+      if (typeof logger === 'function') {
+        if (level === 'warn' || level === 'error') {
+          logger(`[${level.toUpperCase()}]`, ...args);
+        } else {
+          logger(...args);
+        }
+        return;
+      }
+      if (logger && typeof logger.log === 'function') {
+        logger.log(...args);
+      }
+    } catch (_) {}
+  };
+
+  const logDebug = (...args) => emitLog('debug', ...args);
+  const logWarn = (...args) => emitLog('warn', ...args);
+  const logError = (...args) => emitLog('error', ...args);
+
   const geojsonLayerVisible = ref(true);
 
   const geojsonLodLayers = reactive({
@@ -479,7 +503,7 @@ export function useGeojsonLod({
           try {
             setupEntityInteraction?.(entity, layerKey, Cesium);
           } catch (interactionError) {
-            console.warn('[useGeojsonLod] 实体交互初始化失败', interactionError);
+            logWarn('[useGeojsonLod] 实体交互初始化失败', interactionError);
           }
         });
 
@@ -502,7 +526,7 @@ export function useGeojsonLod({
         layer.dataSource = ds;
         logger(`✅ LOD图层已加载: ${layer.name} (${layer.url})`);
       } catch (e) {
-        console.warn(`❌ LOD图层加载失败: ${layer?.name} (${layer?.url})`, e);
+        logWarn(`❌ LOD图层加载失败: ${layer?.name} (${layer?.url})`, e);
         return null;
       }
     }
@@ -578,7 +602,7 @@ export function useGeojsonLod({
 
       currentActiveLayer.value = shouldShowLayer;
     } catch (e) {
-      console.error('更新GeoJSON LOD失败:', e);
+      logError('更新GeoJSON LOD失败:', e);
     } finally {
       isUpdatingLOD = false;
     }
@@ -609,7 +633,7 @@ export function useGeojsonLod({
       try { updateGeojsonLOD(); } catch (_) {}
       requestSceneRender?.();
     } catch (e) {
-      console.warn('toggleGeojsonLayer error:', e);
+      logWarn('toggleGeojsonLayer error:', e);
     }
   };
 
@@ -668,12 +692,12 @@ export function useGeojsonLod({
 
   const debugLabelStatus = () => {
     const keys = Object.keys(geojsonLodLayers);
-    console.log('🔍 状态：active=', currentActiveLayer.value);
+    logDebug('🔍 状态：active=', currentActiveLayer.value);
     for (const k of keys) {
       const ds = geojsonLodLayers[k].dataSource;
       const shown = ds?.show ? 'show' : 'hide';
       const len = labelCollections[k]?.length || 0;
-      console.log(`  ${k}: ds=${shown}, labels=${len}`);
+      logDebug(`  ${k}: ds=${shown}, labels=${len}`);
     }
   };
 

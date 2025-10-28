@@ -19,6 +19,7 @@ import { useRenderLifecycle } from './useRenderLifecycle';
 import { useTilesetManagement } from './useTilesetManagement';
 import { useBasemapControl } from './useBasemapControl';
 import { DEFAULT_CAMERA_VIEW } from '../constants/cesium';
+import { createLogger } from '../utils/logger';
 import { applySceneOptimizations, applyDefaultCameraView, setupSceneLogging } from '../modules/cesium/bootstrap';
 import {
   createViewerContext,
@@ -36,48 +37,45 @@ export function useCesiumBoot(options: CesiumBootOptions) {
   const { cesiumContainer } = options;
 
   // 响应式状态
-const DEBUG_LOG = false;
-const logger = (...args) => { if (DEBUG_LOG) console.log(...args); };
-const debugLog = logger;
+  const logger = createLogger('CesiumBoot');
+  const debugLog = (...args: unknown[]) => logger.debug(...args);
 
-let viewer: Cesium.Viewer | null = null;
-let viewerContext: ViewerBootContext | null = null;
-let pluginDisposer: ViewerPluginDisposer | null = null;
+  let viewer: Cesium.Viewer | null = null;
+  let viewerContext: ViewerBootContext | null = null;
+  let pluginDisposer: ViewerPluginDisposer | null = null;
 
-const {
-  pauseRenderLoop,
-  resumeRenderLoop,
-  isCanvasRenderable,
-  safeResize,
-  setupResizeObservation,
-  teardownResizeObservation,
-  bindWebGLContextHandlers,
-  scheduleViewerRestart,
-  restartViewer,
-  dispose: disposeRenderLifecycle
-} = useRenderLifecycle({
-  cesiumContainer,
-  getViewer: () => viewer,
-  setViewer: (instance) => { viewer = instance; return viewer; },
-  initializeViewer: () => initializeCesium(),
-  onBeforeDestroy: beforeViewerDestroy,
-  onAfterRestart: afterViewerRestart,
-  logger
-});
+  const {
+    pauseRenderLoop,
+    resumeRenderLoop,
+    isCanvasRenderable,
+    safeResize,
+    setupResizeObservation,
+    teardownResizeObservation,
+    bindWebGLContextHandlers,
+    scheduleViewerRestart,
+    restartViewer,
+    dispose: disposeRenderLifecycle
+  } = useRenderLifecycle({
+    cesiumContainer,
+    getViewer: () => viewer,
+    setViewer: (instance) => { viewer = instance; return viewer; },
+    initializeViewer: () => initializeCesium(),
+    onBeforeDestroy: beforeViewerDestroy,
+    onAfterRestart: afterViewerRestart,
+    logger
+  });
 
+  // 专题面板状态与开关
+  const topicState = reactive({
+    groups: { adminOpen: true },
+    lod: { district: true, township: true, community: true, grid: true },
+    labels: { district: true, township: true, community: true, grid: true },
+    layerVisible: { district: true, township: true, community: true, grid: true }
+  });
 
-// 专题面板状态与开关
-const topicState = reactive({
-  groups: { adminOpen: true },
-  lod: { district: true, township: true, community: true, grid: true },
-  labels: { district: true, township: true, community: true, grid: true },
-  layerVisible: { district: true, township: true, community: true, grid: true }
-});
-
-
-const tilesetAllowed = ref(true);
-const lodGeojsonEnabled = ref(true);
-const tilesetVisible = ref(true);
+  const tilesetAllowed = ref(true);
+  const lodGeojsonEnabled = ref(true);
+  const tilesetVisible = ref(true);
 
 const showBuildings = ref(false);
 const showDistricts = ref(false);
@@ -797,7 +795,7 @@ onMounted(async () => {
   await Promise.resolve(); // 让出一次事件循环，等待DOM渲染
   const container = cesiumContainer?.value;
   if (!container) {
-    console.warn('Cesium容器尚未就绪，延迟初始化');
+    logger.warn('Cesium容器尚未就绪，延迟初始化');
     await new Promise(r => setTimeout(r, 0));
   }
   const ensureReady = () => {
@@ -812,7 +810,7 @@ onMounted(async () => {
     await new Promise(r => setTimeout(r, 0));
   }
   if (!ensureReady()) {
-    console.warn('容器尺寸为0，暂不初始化Cesium，等待首次resize');
+    logger.warn('容器尺寸为0，暂不初始化Cesium，等待首次resize');
     setupResizeObservation();
     // 监听一次尺寸变化后再初始化
     const tryInitLater = () => {
@@ -1074,7 +1072,7 @@ function calculatePolygonArea(entity) {
     const area = Cesium.PolygonGeometryLibrary.computeArea2D(positions);
     return area;
   } catch (e) {
-    console.warn('计算面积失败:', e);
+    logger.warn('计算面积失败:', e);
     return 0;
   }
 }
@@ -1301,7 +1299,7 @@ async function toggleTileset() {
 
     requestImmediateRefresh();
   } catch (e) {
-    console.warn('toggleTileset error:', e);
+    logger.warn('toggleTileset error:', e);
   }
 }
 

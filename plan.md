@@ -136,7 +136,7 @@
 - [x] 阶段 4
 - [x] 阶段 5
 - [x] 阶段 6
-- [ ] 阶段 7
+- [x] 阶段 7
 
 > 每完成一个阶段，请勾选对应项并在文件尾部追加“阶段完成纪要”，描述核心变更/风险/下一步计划。
 
@@ -151,3 +151,4 @@
 
 - **阶段 5**：2025-10-27 完成搜索/专题/信息面板 UI 模块化，引入 `useSearchWidget`、`useTopicPanel`、`useInfoPanel`、`useUiFeedback` 与 `useShellLayout`，重构 `CesiumView.vue` 仅保留 orchestrator 职责，并新增模块化样式与文档说明。
 - **阶段 6**（2025-10-27）：新增 `src/modules/cesium/initViewer.ts` 与 `bootstrap/scene.ts`，抽离初始化守卫、场景优化与插件装配；实现 `useCesiumBoot` 组合式 API 并让 `CesiumView.vue` 缩减为 120 行 orchestrator；补充 `src/constants/cesium.ts`、`docs/cesium-bootstrap.md`，同时跑通 `npm run build`（缺少 lint 脚本已记录）。
+- **阶段 7**（2025-10-27）：引入 `src/utils/logger.js` 并在测量、LOD、渲染、地形/3DTiles 管理等模块统一调用日志方法，删除遗留的 `console.*` 调试语句与注释；移除未被引用的 `src/utils/smartTerrainLoader.js`；`npm run build` 通过确认行为未回归。后续若需要重新开启调试输出，可在环境变量中设置 VITE_CESIUM_DEBUG_LOGS=true 或为调试工具显式传入自定义 logger，同时按照计划继续手动冒烟验证关键测量/LOD/面板流程。

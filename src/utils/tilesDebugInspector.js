@@ -1,4 +1,5 @@
 import * as Cesium from "cesium"
+import { createLogger } from "./logger"
 
 /**
  * 3DTiles 属性拾取调试器（低耦合，便于删除）
@@ -19,10 +20,21 @@ export function enableTilesPickInspector(viewer, options = {}) {
   const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas)
   const highlightCollection = scene.postProcessStages
   let originalColorStage = null
+  const scopedLogger =
+    options.logger ||
+    createLogger("TilesInspector", {
+      level: options.level ?? "debug",
+      debugEnabled: options.debug ?? true
+    })
 
   const log = (...args) => {
-    // 统一前缀，便于过滤
-    console.log("[TilesInspector]", ...args)
+    try {
+      if (scopedLogger && typeof scopedLogger.debug === "function") {
+        scopedLogger.debug(...args)
+      } else if (typeof scopedLogger === "function") {
+        scopedLogger(...args)
+      }
+    } catch {}
   }
 
   function tryGetCartographic(position) {

@@ -1,4 +1,5 @@
 import { ref } from 'vue';
+import { createLogger } from '../utils/logger';
 
 export function useMeasurementTools({
   Cesium,
@@ -10,6 +11,7 @@ export function useMeasurementTools({
   hideGridBlocksForMeasurementIfNeeded,
   restoreGridBlocksAfterMeasurement
 }) {
+  const logger = createLogger('MeasurementTools', { level: 'warn' });
   const measurePanelVisible = ref(false);
   const activeMeasureTab = ref('distance');
   const measureUnit = ref('metric');
@@ -39,7 +41,7 @@ export function useMeasurementTools({
   const ensureViewer = () => {
     const viewer = getViewer?.();
     if (!viewer) {
-      console.warn('[measurement] Cesium Viewer 尚未就绪');
+      logger.warn('[measurement] Cesium Viewer 尚未就绪');
     }
     return viewer;
   };

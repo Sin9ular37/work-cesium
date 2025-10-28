@@ -25,15 +25,29 @@ export function useRenderLifecycle({
     }
   };
 
-  const callLogger = (...args) => {
+  const emitLog = (level, ...args) => {
     try {
+      if (logger && typeof logger[level] === 'function') {
+        logger[level](...args);
+        return;
+      }
       if (typeof logger === 'function') {
-        logger(...args);
-      } else if (logger && typeof logger.log === 'function') {
+        if (level === 'warn' || level === 'error') {
+          logger(`[${level.toUpperCase()}]`, ...args);
+        } else {
+          logger(...args);
+        }
+        return;
+      }
+      if (logger && typeof logger.log === 'function') {
         logger.log(...args);
       }
     } catch (_) {}
   };
+
+  const callLogger = (...args) => emitLog('debug', ...args);
+  const logWarn = (...args) => emitLog('warn', ...args);
+  const logError = (...args) => emitLog('error', ...args);
 
   const pauseRenderLoop = () => {
     const viewer = ensureViewer();
@@ -127,7 +141,7 @@ export function useRenderLifecycle({
       try {
         resizeObserver.observe(container);
       } catch (err) {
-        console.warn('[useRenderLifecycle] ResizeObserver 观察失败:', err);
+        logWarn('[useRenderLifecycle] ResizeObserver 观察失败:', err);
       }
     }
 
@@ -184,7 +198,7 @@ export function useRenderLifecycle({
     unbindWebGLContextHandlers();
 
     const onLost = (event) => {
-      console.warn('⚠️ WebGL 上下文丢失');
+      logWarn('⚠️ WebGL 上下文丢失');
       if (event && typeof event.preventDefault === 'function') {
         event.preventDefault();
       }
@@ -203,7 +217,7 @@ export function useRenderLifecycle({
       canvas.addEventListener('webglcontextrestored', onRestored, false);
       webglContextHandlers = { canvas, onLost, onRestored };
     } catch (err) {
-      console.warn('[useRenderLifecycle] 绑定 WebGL 事件失败:', err);
+      logWarn('[useRenderLifecycle] 绑定 WebGL 事件失败:', err);
     }
   };
 
@@ -238,7 +252,7 @@ export function useRenderLifecycle({
     lastRestartAt = Date.now();
 
     pauseRenderLoop();
-    console.warn('🔁 正在重启 Cesium Viewer', reason ? `（原因：${reason}）` : '');
+    logWarn('🔁 正在重启 Cesium Viewer', reason ? `（原因：${reason}）` : '');
 
     try {
       teardownResizeObservation();
@@ -277,7 +291,7 @@ export function useRenderLifecycle({
         await Promise.resolve(onAfterRestart?.(nextViewer));
       } catch (_) {}
     } catch (error) {
-      console.error('重启 Viewer 失败:', error);
+      logError('重启 Viewer 失败:', error);
     } finally {
       restarting = false;
     }

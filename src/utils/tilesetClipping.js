@@ -2,6 +2,9 @@
 // This reduces requests and draw calls by culling tiles outside the box.
 
 import * as Cesium from 'cesium';
+import { createLogger } from './logger';
+
+const logger = createLogger('TilesetClipping', { level: 'warn' });
 
 // Simple approx conversion meters <-> degrees for small distances
 function metersToDegrees(latDeg, dxMeters, dyMeters) {
@@ -174,7 +177,7 @@ export function installRegionalClipping(viewer, tileset, opts = {}) {
       viewer.scene.requestRender();
     } catch (e) {
       // Fallback: disable if fails
-      console.warn('installRegionalClipping: failed to apply clipping, disabling.', e);
+      logger.warn('installRegionalClipping: failed to apply clipping, disabling.', e);
       enabled = false;
       tileset.clippingPlanes = undefined;
     }

@@ -28,15 +28,29 @@ export function useCameraControls({
     }
   };
 
-  const callLogger = (...args) => {
+  const emitLog = (level, ...args) => {
     try {
+      if (logger && typeof logger[level] === 'function') {
+        logger[level](...args);
+        return;
+      }
       if (typeof logger === 'function') {
-        logger(...args);
-      } else if (logger && typeof logger.log === 'function') {
+        if (level === 'warn' || level === 'error') {
+          logger(`[${level.toUpperCase()}]`, ...args);
+        } else {
+          logger(...args);
+        }
+        return;
+      }
+      if (logger && typeof logger.log === 'function') {
         logger.log(...args);
       }
     } catch (_) {}
   };
+
+  const callLogger = (...args) => emitLog('debug', ...args);
+  const logWarn = (...args) => emitLog('warn', ...args);
+  const logError = (...args) => emitLog('error', ...args);
 
   const setupCameraMoveHandler = ({
     onCameraIdle = () => {},
@@ -44,7 +58,7 @@ export function useCameraControls({
   } = {}) => {
     const viewer = ensureViewer();
     if (!viewer) {
-      console.warn('[useCameraControls] viewer 未就绪，无法安装相机监听');
+      logWarn('[useCameraControls] viewer 未就绪，无法安装相机监听');
       return;
     }
 
@@ -152,7 +166,7 @@ export function useCameraControls({
       viewer.camera.moveStart.addEventListener(moveStartHandler);
       viewer.camera.moveEnd.addEventListener(moveEndHandler);
     } catch (err) {
-      console.error('[useCameraControls] 安装相机事件失败:', err);
+      logError('[useCameraControls] 安装相机事件失败:', err);
     }
 
     try {
@@ -167,7 +181,7 @@ export function useCameraControls({
       }, Cesium.ScreenSpaceEventType.WHEEL);
       wheelHandlerInstalled = true;
     } catch (err) {
-      console.error('[useCameraControls] 安装滚轮监听失败:', err);
+      logError('[useCameraControls] 安装滚轮监听失败:', err);
     }
 
     callLogger('相机移动监听器已安装');

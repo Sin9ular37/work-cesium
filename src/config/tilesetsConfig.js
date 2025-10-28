@@ -1,8 +1,11 @@
+import { createLogger } from '../utils/logger';
+
 /**
  * 3DTiles路径配置（独立服务方式）
  */
 
 const MODE = import.meta.env.MODE
+const logger = createLogger('TilesetsConfig', { level: 'warn' });
 
 // 3DTiles 服务配置
 export const TILESET_SERVICES = {
@@ -34,7 +37,7 @@ export function getTilesetPath(tilesetName) {
   const tilesetPath = config[tilesetName]
   
   if (!tilesetPath) {
-    console.warn(`未找到3DTiles配置: ${tilesetName}`)
+    logger.warn(`未找到3DTiles配置: ${tilesetName}`)
     return null
   }
   
@@ -58,7 +61,7 @@ export async function checkTilesetService(tilesetName) {
     })
     return response.ok
   } catch (error) {
-    console.warn(`3DTiles服务不可用: ${baseUrl}`, error)
+    logger.warn(`3DTiles服务不可用: ${baseUrl}`, error)
     return false
   }
 }
@@ -82,13 +85,13 @@ export async function checkTilesetExists(tilesetName) {
     
     const contentType = response.headers.get('content-type') || ''
     if (contentType.includes('text/html')) {
-      console.warn(`检测到可能的 HTML 回退: ${path}`)
+      logger.warn(`检测到可能的 HTML 回退: ${path}`)
       return false
     }
 
     return true
   } catch (error) {
-    console.warn(`检查3DTiles文件失败: ${path}`, error)
+    logger.warn(`检查3DTiles文件失败: ${path}`, error)
     return false
   }
 }

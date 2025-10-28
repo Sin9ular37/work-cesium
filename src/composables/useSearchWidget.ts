@@ -1,5 +1,6 @@
 import { computed, reactive, ref, watch, type Ref } from 'vue';
 import type { ToastLevel } from './useUiFeedback';
+import { createLogger } from '../utils/logger';
 
 export type SearchLayerKey = 'district' | 'township' | 'community' | 'grid';
 
@@ -74,6 +75,7 @@ export function useSearchWidget({
   highlightEntity,
   notify
 }: SearchWidgetHooks): SearchWidgetController {
+  const logger = createLogger('SearchWidget', { level: 'warn' });
   const dropdownVisible = ref(false);
   const isSearching = ref(false);
   const activeIndex = ref(-1);
@@ -125,7 +127,7 @@ export function useSearchWidget({
         notify('未找到匹配结果', { type: 'warning' });
       }
     } catch (error) {
-      console.warn('[search] 执行失败', error);
+      logger.warn('[search] 执行失败', error);
       dropdownVisible.value = false;
       if (notify) {
         notify('搜索失败，请稍后重试', { type: 'error' });
@@ -158,7 +160,7 @@ export function useSearchWidget({
       highlightEntity(item.entity, { layerKey: item.layerKey });
       dropdownVisible.value = false;
     } catch (error) {
-      console.warn('[search] highlight 失败', error);
+      logger.warn('[search] highlight 失败', error);
     }
   };
 

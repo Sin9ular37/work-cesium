@@ -1,4 +1,7 @@
 import * as Cesium from "cesium"
+import { createLogger } from "./logger"
+
+const logger = createLogger("TerrainLoader", { level: "info" })
 
 /**
  * 低耦合 DEM 加载工具（便于独立删除）
@@ -37,8 +40,8 @@ class SmartArcGISTerrainProvider extends Cesium.ArcGISTiledElevationTerrainProvi
 
   async _performLevelDetection() {
     try {
-      console.log('[SmartTerrainProvider] 开始检测地形服务等级...')
-      console.log('[SmartTerrainProvider] 服务URL:', this._url)
+      logger.debug('[SmartTerrainProvider] 开始检测地形服务等级...')
+      logger.debug('[SmartTerrainProvider] 服务URL:', this._url)
 
       // 1) 优先读取服务元数据
       const metaUrl = this._url.endsWith('/') ? `${this._url}?f=pjson` : `${this._url}/?f=pjson`
@@ -91,17 +94,17 @@ class SmartArcGISTerrainProvider extends Cesium.ArcGISTiledElevationTerrainProvi
 
         this._minLevel = minLevel
         this._maxLevel = maxLevel
-        console.log(`[SmartTerrainProvider] 等级检测完成 - 最小: ${minLevel}, 最大: ${maxLevel}`)
+        logger.info(`[SmartTerrainProvider] 等级检测完成 - 最小: ${minLevel}, 最大: ${maxLevel}`)
         return { minLevel, maxLevel }
       }
 
       // 2) 元数据不可用：保守默认
-      console.warn('[SmartTerrainProvider] 元数据获取失败，使用默认 0-23')
+      logger.warn('[SmartTerrainProvider] 元数据获取失败，使用默认 0-23')
       this._minLevel = 0
       this._maxLevel = 23
       return { minLevel: 0, maxLevel: 23 }
     } catch (error) {
-      console.warn('[SmartTerrainProvider] 等级检测失败，使用默认值', error)
+      logger.warn('[SmartTerrainProvider] 等级检测失败，使用默认值', error)
       this._minLevel = 0
       this._maxLevel = 23
       return { minLevel: 0, maxLevel: 23 }
@@ -242,8 +245,8 @@ class SmartArcGISTerrainProvider extends Cesium.ArcGISTiledElevationTerrainProvi
 export async function loadSmartArcGisTerrain(viewer, serviceUrl, options = {}) {
   if (!viewer) return false
   try {
-    console.log(`[TerrainLoader] 尝试加载智能ArcGIS地形服务: ${serviceUrl}`)
-    console.log(`[TerrainLoader] 坐标系统: Web Mercator (EPSG:3857) - Cesium支持`)
+    logger.info(`[TerrainLoader] 尝试加载智能ArcGIS地形服务: ${serviceUrl}`)
+    logger.debug(`[TerrainLoader] 坐标系统: Web Mercator (EPSG:3857) - Cesium支持`)
 
     // 创建智能地形提供器
     const terrainProvider = new SmartArcGISTerrainProvider({
@@ -259,10 +262,10 @@ export async function loadSmartArcGisTerrain(viewer, serviceUrl, options = {}) {
     await terrainProvider.readyPromise
 
     viewer.terrainProvider = terrainProvider
-    console.log(`[TerrainLoader] ✅ 智能ArcGIS地形服务加载成功: ${serviceUrl}`)
+    logger.info(`[TerrainLoader] ✅ 智能ArcGIS地形服务加载成功: ${serviceUrl}`)
     return true
   } catch (error) {
-    console.warn(`[TerrainLoader] 智能ArcGIS地形服务加载失败: ${serviceUrl}`, error)
+    logger.warn(`[TerrainLoader] 智能ArcGIS地形服务加载失败: ${serviceUrl}`, error)
     return false
   }
 }
@@ -277,8 +280,8 @@ export async function loadSmartArcGisTerrain(viewer, serviceUrl, options = {}) {
 export async function loadArcGisTerrain(viewer, serviceUrl, options = {}) {
   if (!viewer) return false
   try {
-    console.log(`[TerrainLoader] 尝试加载ArcGIS地形服务: ${serviceUrl}`)
-    console.log(`[TerrainLoader] 坐标系统: Web Mercator (EPSG:3857) - Cesium支持`)
+    logger.info(`[TerrainLoader] 尝试加载ArcGIS地形服务: ${serviceUrl}`)
+    logger.debug(`[TerrainLoader] 坐标系统: Web Mercator (EPSG:3857) - Cesium支持`)
 
     const terrainProvider = await Cesium.ArcGISTiledElevationTerrainProvider.fromUrl(serviceUrl, {
       requestVertexNormals: options.requestVertexNormals ?? true,
@@ -287,10 +290,10 @@ export async function loadArcGisTerrain(viewer, serviceUrl, options = {}) {
 
     await terrainProvider.readyPromise
     viewer.terrainProvider = terrainProvider
-    console.log(`[TerrainLoader] ✅ ArcGIS地形服务加载成功: ${serviceUrl}`)
+    logger.info(`[TerrainLoader] ✅ ArcGIS地形服务加载成功: ${serviceUrl}`)
     return true
   } catch (error) {
-    console.warn(`[TerrainLoader] ArcGIS地形服务加载失败: ${serviceUrl}`, error)
+    logger.warn(`[TerrainLoader] ArcGIS地形服务加载失败: ${serviceUrl}`, error)
     return false
   }
 }
@@ -302,7 +305,7 @@ export async function loadArcGisTerrain(viewer, serviceUrl, options = {}) {
 export function disableTerrain(viewer) {
   if (!viewer) return
   viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider()
-  console.log("[TerrainLoader] ⛔ 已关闭地形（使用椭球）")
+  logger.info("[TerrainLoader] ⛔ 已关闭地形（使用椭球）")
 }
 
 /**

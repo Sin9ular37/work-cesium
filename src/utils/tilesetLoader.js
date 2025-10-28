@@ -5,6 +5,9 @@
 
 import * as Cesium from "cesium"
 import { getTilesetPath, checkTilesetExists, checkTilesetService } from "../config/tilesetsConfig"
+import { createLogger } from "./logger"
+
+const logger = createLogger("TilesetLoader", { level: "info" })
 
 /**
  * 3DTiles加载配置
@@ -51,7 +54,7 @@ export const TILESET_CONFIG = {
  */
 export async function loadTileset(tilesetName, options = {}) {
   try {
-    console.log(`开始加载3DTiles数据集: ${tilesetName}`)
+    logger.info(`开始加载3DTiles数据集: ${tilesetName}`)
     
     // 检查服务可用性
     const serviceAvailable = await checkTilesetService(tilesetName)
@@ -65,7 +68,7 @@ export async function loadTileset(tilesetName, options = {}) {
       throw new Error(`未找到3DTiles配置: ${tilesetName}`)
     }
     
-    console.log(`3DTiles服务地址: ${tilesetPath}`)
+    logger.debug(`3DTiles服务地址: ${tilesetPath}`)
     
     // 检查文件是否存在
     const exists = await checkTilesetExists(tilesetName)
@@ -132,8 +135,8 @@ export async function loadTileset(tilesetName, options = {}) {
       )
     }
     
-    console.log(`✅ 3DTiles数据集加载成功: ${tilesetName}`)
-    console.log(`边界球信息:`, {
+    logger.info(`✅ 3DTiles数据集加载成功: ${tilesetName}`)
+    logger.debug(`边界球信息:`, {
       center: tileset.boundingSphere?.center,
       radius: tileset.boundingSphere?.radius
     })
@@ -141,7 +144,7 @@ export async function loadTileset(tilesetName, options = {}) {
     return tileset
     
   } catch (error) {
-    console.error(`❌ 3DTiles数据集加载失败: ${tilesetName}`, error)
+    logger.error(`❌ 3DTiles数据集加载失败: ${tilesetName}`, error)
     return null
   }
 }
@@ -170,7 +173,7 @@ export function createTilesetLoader(viewer) {
     async load(tilesetName, options = {}) {
       // 如果已经加载过，直接返回
       if (loadedTilesets.has(tilesetName)) {
-        console.log(`3DTiles数据集已加载: ${tilesetName}`)
+        logger.debug(`3DTiles数据集已加载: ${tilesetName}`)
         return loadedTilesets.get(tilesetName)
       }
       
@@ -194,7 +197,7 @@ export function createTilesetLoader(viewer) {
       if (tileset) {
         viewer.scene.primitives.remove(tileset)
         loadedTilesets.delete(tilesetName)
-        console.log(`3DTiles数据集已卸载: ${tilesetName}`)
+        logger.debug(`3DTiles数据集已卸载: ${tilesetName}`)
       }
     },
     
@@ -221,7 +224,7 @@ export function createTilesetLoader(viewer) {
     clear() {
       loadedTilesets.forEach((tileset, name) => {
         viewer.scene.primitives.remove(tileset)
-        console.log(`3DTiles数据集已清除: ${name}`)
+        logger.debug(`3DTiles数据集已清除: ${name}`)
       })
       loadedTilesets.clear()
     }

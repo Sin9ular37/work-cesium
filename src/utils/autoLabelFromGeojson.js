@@ -128,7 +128,6 @@ export function autoLabelFromGeojson({ viewer, dataSource, labelStyle = {}, getN
       finalStyle.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0.0, maxVisibleDistance);
     }
     
-    // try { console.log('[AutoLabel][render] text =', text, 'maxDistance =', maxVisibleDistance, 'lon=', lonDeg, 'lat=', latDeg); } catch {}
     const label = labelCollection.add({ position: pos, text, ...finalStyle });
     created.push(label);
   }
