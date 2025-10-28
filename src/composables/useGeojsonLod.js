@@ -316,21 +316,33 @@ export function useGeojsonLod({
         scene
           .clampToHeightMostDetailed(bases)
           .then((clamped) => {
+            const collection = labelCollections[layerKey];
+            if (!collection || (typeof collection.isDestroyed === 'function' && collection.isDestroyed())) {
+              return;
+            }
             if (clamped && clamped.length) {
               for (let k = 0; k < slice.length; k++) {
-                if (slice[k] && clamped[k]) {
-                  let pos = clamped[k];
-                  if (layerKey === 'grid') {
-                    const carto = Cesium.Cartographic.fromCartesian(pos);
-                    const elevated = Cesium.Cartesian3.fromRadians(
-                      carto.longitude,
-                      carto.latitude,
-                      (carto.height || 0) + GRID_LABEL_HEIGHT_OFFSET
-                    );
-                    pos = elevated;
-                  }
-                  slice[k].position = pos;
+                const label = slice[k];
+                if (!label || !clamped[k]) continue;
+                if (typeof label.isDestroyed === 'function' && label.isDestroyed()) continue;
+                const parentCollection = label.collection;
+                if (
+                  !parentCollection ||
+                  (typeof parentCollection.isDestroyed === 'function' && parentCollection.isDestroyed())
+                ) {
+                  continue;
                 }
+                let pos = clamped[k];
+                if (layerKey === 'grid') {
+                  const carto = Cesium.Cartographic.fromCartesian(pos);
+                  const elevated = Cesium.Cartesian3.fromRadians(
+                    carto.longitude,
+                    carto.latitude,
+                    (carto.height || 0) + GRID_LABEL_HEIGHT_OFFSET
+                  );
+                  pos = elevated;
+                }
+                label.position = pos;
               }
             }
           })
