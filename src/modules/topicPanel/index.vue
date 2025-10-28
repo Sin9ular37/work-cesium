@@ -86,34 +86,33 @@ defineProps<{
 <style scoped>
 .topic-panel {
   position: absolute;
-  top: 50px;
-  right: 16px;
+  top: 60px;
+  right: 10px;
   width: 320px;
-  max-height: calc(100vh - 70px);
+  height: calc(100vh - 80px);
   display: flex;
   flex-direction: column;
-  background: rgba(18, 25, 37, 0.94);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
-  color: #ffffff;
+  background: #ffffff;
+  color: #1f2937;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
   overflow: hidden;
-  z-index: 1900;
-  backdrop-filter: blur(8px);
+  z-index: 1200;
 }
 
 .topic-header {
+  height: 44px;
+  background: #005FA2;
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0 14px;
 }
 
 .topic-header .title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  letter-spacing: 0.4px;
 }
 
 .header-actions {
@@ -125,76 +124,100 @@ defineProps<{
 .icon-btn {
   appearance: none;
   border: none;
-  border-radius: 12px;
-  padding: 4px 10px;
-  height: 28px;
-  min-width: 28px;
-  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 0 10px;
+  height: 30px;
+  min-width: 30px;
+  background: transparent;
   color: inherit;
   cursor: pointer;
-  font-size: 12px;
-  transition: background 0.18s ease;
+  font-size: 16px;
+  line-height: 1;
+  transition: background 0.18s ease, transform 0.18s ease;
 }
 
 .icon-btn:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.12);
+  transform: scale(1.06);
 }
 
 .topic-body {
-  padding: 12px 16px 18px;
+  padding: 12px 14px 16px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .topic-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #ffffff;
+  overflow: hidden;
 }
 
 .group-head {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 10px 12px;
+  background: #f9fafb;
   font-size: 14px;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.85);
+  color: #1f2937;
+  font-weight: 600;
+  transition: background 0.18s ease;
+}
+
+.group-head:hover {
+  background: #e6f2fb;
 }
 
 .caret {
   font-size: 14px;
+  color: #6b7280;
 }
 
 .group-content {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  padding: 8px 10px 10px;
+  gap: 8px;
 }
 
 .topic-item {
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  transition: background 0.18s ease, border 0.18s ease;
+  padding: 8px 6px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
 }
 
-.topic-item.active {
-  border: 1px solid rgba(102, 191, 255, 0.5);
-  background: rgba(102, 191, 255, 0.15);
+.topic-item:last-child {
+  border-bottom: none;
 }
 
 .topic-item.disabled {
-  opacity: 0.6;
+  color: #9ca3af;
+  opacity: 0.75;
+}
+
+.topic-item.disabled .act-btn {
+  pointer-events: none;
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+}
+
+.topic-item.active {
+  background: #e6f2fb;
+  border-radius: 4px;
+  border-bottom-color: transparent;
 }
 
 .topic-item .label {
-  font-size: 14px;
   font-weight: 500;
 }
 
@@ -205,29 +228,55 @@ defineProps<{
 
 .act-btn {
   appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 12px;
-  padding: 4px 10px;
-  background: rgba(255, 255, 255, 0.1);
-  color: inherit;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 0 10px;
+  height: 30px;
+  background: #f6f8fa;
+  color: #1f2937;
   cursor: pointer;
-  font-size: 12px;
-  transition: background 0.18s ease, border-color 0.18s ease;
+  font-size: 13px;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
 .act-btn:hover,
 .act-btn.active {
-  background: rgba(102, 191, 255, 0.25);
-  border-color: rgba(102, 191, 255, 0.6);
+  background: #0b74da;
+  border-color: #0b74da;
+  color: #ffffff;
 }
 
 .divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.09);
+  background: #e5e7eb;
   margin: 4px 0;
 }
 
 .topic-tileset .topic-item {
   justify-content: space-between;
+  border-bottom: none;
+}
+
+@media (max-width: 992px) {
+  .topic-panel {
+    right: 12px;
+    width: 300px;
+  }
+}
+
+@media (max-width: 576px) {
+  .topic-panel {
+    top: auto;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    height: 52vh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .topic-header {
+    border-radius: 12px 12px 0 0;
+  }
 }
 </style>
