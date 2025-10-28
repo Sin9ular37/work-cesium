@@ -268,6 +268,8 @@ let uninstallRegionalClipping = null;
 let removeCameraIdleListener = null;
 let currentDisplay = 'imagery'; // 'tiles' | 'imagery'
 let switchTimer = null; // 切换去抖定时器
+let lastTilesetSse = null;
+let lastTilesetMemory = null;
 
 const clearPendingDisplaySwitch = () => {
   if (switchTimer) {
@@ -521,6 +523,9 @@ function checkZoomLevelAndToggleDisplay() {
     return;
   }
 
+  const activeLodLayer = currentActiveLayer?.value ?? null;
+  updateTilesetQuality(distance, activeLodLayer);
+
   logger(`[距离检查] 当前距离: ${distance.toFixed(2)}m, 阈值: ${DISPLAY_THRESHOLDS.showTilesBelow}m/${DISPLAY_THRESHOLDS.hideTilesAbove}m`);
 
   // 小工具：根据模式强制校正可见性，避免状态与显示不同步
@@ -540,7 +545,6 @@ function checkZoomLevelAndToggleDisplay() {
     };
   };
 
-  const activeLodLayer = currentActiveLayer?.value ?? null;
   if (activeLodLayer === 'grid') {
     clearPendingDisplaySwitch();
     if (currentDisplay !== 'tiles' || !buildingsTileset.value.show) {
@@ -628,6 +632,54 @@ function showArcGISMap() {
 // 新增：隐藏ArcGIS地图
 function hideArcGISMap() {
   hidePrimaryImagery();
+}
+
+function updateTilesetQuality(distance, activeLodLayer) {
+  const tileset = buildingsTileset.value;
+  if (!tileset || !Number.isFinite(distance)) return;
+
+  let targetSse;
+  let targetMemory;
+
+  if (activeLodLayer === 'grid') {
+    targetSse = 2.0;
+    targetMemory = 1024;
+  } else if (distance < 900) {
+    targetSse = 2.4;
+    targetMemory = 896;
+  } else if (distance < 1600) {
+    targetSse = 3.2;
+    targetMemory = 768;
+  } else if (distance < 2800) {
+    targetSse = 5.0;
+    targetMemory = 640;
+  } else {
+    targetSse = 7.5;
+    targetMemory = 512;
+  }
+
+  targetSse = Cesium.Math.clamp(targetSse, 1.8, 12);
+  targetMemory = Math.max(256, Math.min(targetMemory, 1536));
+
+  if (typeof tileset.maximumScreenSpaceError === 'number') {
+    if (lastTilesetSse == null || Math.abs(lastTilesetSse - targetSse) > 0.05) {
+      tileset.maximumScreenSpaceError = targetSse;
+      lastTilesetSse = targetSse;
+    }
+  }
+
+  if (typeof tileset.maximumMemoryUsage === 'number') {
+    if (lastTilesetMemory == null || Math.abs(lastTilesetMemory - targetMemory) >= 32) {
+      tileset.maximumMemoryUsage = targetMemory;
+      lastTilesetMemory = targetMemory;
+    }
+  }
+
+  if (distance < 1200 || activeLodLayer === 'grid') {
+    tileset.dynamicScreenSpaceError = false;
+  } else {
+    tileset.dynamicScreenSpaceError = true;
+  }
 }
 
 // 修改preloadBuildings函数，添加防重复加载
