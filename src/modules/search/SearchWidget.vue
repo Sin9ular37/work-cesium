@@ -91,15 +91,17 @@ const layerLabels: Record<string, string> = {
 };
 
 const filters = computed(() =>
-  Object.entries(controller.filters).map(([key, active]) => {
-    const group = controller.groupedResults.value.find((item) => item.key === key);
-    const label = layerLabels[key] ?? group?.label ?? key;
-    return {
-      key,
-      active,
-      label
-    };
-  })
+  Object.entries(controller.filters)
+    .filter(([key]) => key !== 'district')
+    .map(([key, active]) => {
+      const group = controller.groupedResults.value.find((item) => item.key === key);
+      const label = layerLabels[key] ?? group?.label ?? key;
+      return {
+        key,
+        active,
+        label
+      };
+    })
 );
 
 const groupedWithIndex = computed(() => {
