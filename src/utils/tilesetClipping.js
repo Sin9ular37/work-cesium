@@ -3,8 +3,23 @@
 
 import * as Cesium from 'cesium';
 import { createLogger } from './logger';
+import { APP_CONFIG, cloneConfigSection } from '../config/appConfig';
 
 const logger = createLogger('TilesetClipping', { level: 'warn' });
+
+const clippingConfigDefaults = cloneConfigSection(APP_CONFIG.tileset?.clipping || {});
+const defaultHalfSizeRules =
+  Array.isArray(clippingConfigDefaults?.halfSizeRules) && clippingConfigDefaults.halfSizeRules.length
+    ? clippingConfigDefaults.halfSizeRules
+    : [
+        { maxHeight: 300, halfSize: 800 },
+        { maxHeight: 800, halfSize: 1500 },
+        { maxHeight: 1500, halfSize: 2500 },
+        { maxHeight: 3000, halfSize: 4500 },
+        { maxHeight: 8000, halfSize: 9000 },
+        { maxHeight: 20000, halfSize: 20000 },
+        { maxHeight: Number.POSITIVE_INFINITY, halfSize: 40000 }
+      ];
 
 // Simple approx conversion meters <-> degrees for small distances
 function metersToDegrees(latDeg, dxMeters, dyMeters) {
@@ -16,16 +31,20 @@ function metersToDegrees(latDeg, dxMeters, dyMeters) {
   return { dLon, dLat };
 }
 
-function pickClipHalfSizeMeters(heightMeters) {
+function pickClipHalfSizeMeters(heightMeters, rules) {
   // Choose a half-size based on altitude. Conservative to avoid thrashing.
   const h = Math.max(0, heightMeters || 0);
-  if (h < 300) return 800;        // 1.6 km square
-  if (h < 800) return 1500;       // 3 km
-  if (h < 1500) return 2500;      // 5 km
-  if (h < 3000) return 4500;      // 9 km
-  if (h < 8000) return 9000;      // 18 km
-  if (h < 20000) return 20000;    // 40 km
-  return 40000;                   // 80 km at very high alt
+  if (!Array.isArray(rules) || rules.length === 0) {
+    return 40000;
+  }
+  for (const rule of rules) {
+    const maxHeight = Number.isFinite(rule?.maxHeight) ? rule.maxHeight : Number.POSITIVE_INFINITY;
+    if (h < maxHeight) {
+      return Number.isFinite(rule?.halfSize) ? rule.halfSize : 40000;
+    }
+  }
+  const lastRule = rules[rules.length - 1];
+  return Number.isFinite(lastRule?.halfSize) ? lastRule.halfSize : 40000;
 }
 
 const scratchColumn = new Cesium.Cartesian3()
@@ -100,13 +119,14 @@ export function installRegionalClipping(viewer, tileset, opts = {}) {
   if (!viewer || !tileset) return () => {};
 
   const options = {
-    enabled: true,
-    debugEdges: false,
-    altitudeMargin: 1000, // extra height above camera
-    minHeight: -200,
-    maxHeightCap: 8000,
-    idleDebounceMs: 150,
-    moveThrottleMs: 180,
+    enabled: clippingConfigDefaults.enabled ?? true,
+    debugEdges: clippingConfigDefaults.debugEdges ?? false,
+    altitudeMargin: clippingConfigDefaults.altitudeMargin ?? 1000, // extra height above camera
+    minHeight: clippingConfigDefaults.minHeight ?? -200,
+    maxHeightCap: clippingConfigDefaults.maxHeightCap ?? 8000,
+    idleDebounceMs: clippingConfigDefaults.idleDebounceMs ?? 150,
+    moveThrottleMs: clippingConfigDefaults.moveThrottleMs ?? 180,
+    halfSizeRules: clippingConfigDefaults.halfSizeRules ?? defaultHalfSizeRules,
     ...opts
   };
 
@@ -115,6 +135,9 @@ export function installRegionalClipping(viewer, tileset, opts = {}) {
   let lastHalfSize = 0;
   let lastUpdate = 0;
   let rafId = 0;
+  const halfSizeRules = Array.isArray(options.halfSizeRules) && options.halfSizeRules.length
+    ? options.halfSizeRules
+    : defaultHalfSizeRules;
 
   function computeRect() {
     const carto = Cesium.Cartographic.fromCartesian(viewer.camera.positionWC);
@@ -122,7 +145,7 @@ export function installRegionalClipping(viewer, tileset, opts = {}) {
     const centerLat = Cesium.Math.toDegrees(carto.latitude);
     const height = carto.height;
 
-    const halfSize = pickClipHalfSizeMeters(height);
+    const halfSize = pickClipHalfSizeMeters(height, halfSizeRules);
 
     const { dLon, dLat } = metersToDegrees(centerLat, halfSize, halfSize);
     const rect = Cesium.Rectangle.fromDegrees(

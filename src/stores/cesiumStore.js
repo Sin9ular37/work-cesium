@@ -1,14 +1,27 @@
 import { defineStore } from 'pinia';
 import { ref, reactive } from 'vue';
+import * as Cesium from 'cesium';
+import { APP_CONFIG, cloneConfigSection } from '../config/appConfig';
+
+const cesiumConfig = APP_CONFIG.cesium || {};
+const defaultPositionConfig = cloneConfigSection(cesiumConfig.defaultPosition || {});
+const presetPositionsConfig = cloneConfigSection(cesiumConfig.presetPositions || {});
+const cameraConfig = cesiumConfig.camera || {};
+const defaultOrientation = cloneConfigSection(cameraConfig.defaultOrientation || {
+  heading: 0,
+  pitch: -75,
+  roll: 0
+});
+const defaultFlyDuration = cameraConfig.flyToDuration ?? 2.0;
 
 export const useCesiumStore = defineStore('cesium', () => {
   // 状态
   const viewer = ref(null);
   const isInitialized = ref(false);
   const currentPosition = reactive({
-    longitude: 126.643927,
-    latitude: 45.757446,
-    height: 10000
+    longitude: defaultPositionConfig.longitude ?? 0,
+    latitude: defaultPositionConfig.latitude ?? 0,
+    height: defaultPositionConfig.height ?? 0
   });
   
   const sceneState = reactive({
@@ -63,14 +76,20 @@ export const useCesiumStore = defineStore('cesium', () => {
     Object.assign(performanceMetrics, metrics);
   }
   
-  function flyToPosition(longitude, latitude, height, duration = 2.0) {
+  function flyToPosition(
+    longitude,
+    latitude,
+    height,
+    duration = defaultFlyDuration,
+    orientation = defaultOrientation
+  ) {
     if (viewer.value) {
       viewer.value.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(longitude, latitude, height),
         orientation: {
-          heading: Cesium.Math.toRadians(0),
-          pitch: Cesium.Math.toRadians(-75),
-          roll: 0
+          heading: Cesium.Math.toRadians(orientation?.heading ?? defaultOrientation.heading ?? 0),
+          pitch: Cesium.Math.toRadians(orientation?.pitch ?? defaultOrientation.pitch ?? -75),
+          roll: Cesium.Math.toRadians(orientation?.roll ?? defaultOrientation.roll ?? 0)
         },
         duration: duration
       });
@@ -91,31 +110,23 @@ export const useCesiumStore = defineStore('cesium', () => {
   }
   
   // 预设位置
-  const presetPositions = {
-    harbin: {
-      name: '哈尔滨市中心',
-      longitude: 126.643927,
-      latitude: 45.757446,
-      height: 10000
-    },
-    buildings: {
-      name: '建筑群',
-      longitude: 126.53,
-      latitude: 45.80,
-      height: 1500
-    },
-    districts: {
-      name: '区域概览',
-      longitude: 126.643927,
-      latitude: 45.757446,
-      height: 15000
-    }
-  };
+  const presetPositions = presetPositionsConfig;
   
   function flyToPreset(presetName) {
     const preset = presetPositions[presetName];
     if (preset && viewer.value) {
-      flyToPosition(preset.longitude, preset.latitude, preset.height);
+      const targetOrientation = {
+        heading: preset.heading ?? preset.orientation?.heading ?? defaultOrientation.heading,
+        pitch: preset.pitch ?? preset.orientation?.pitch ?? defaultOrientation.pitch,
+        roll: preset.roll ?? preset.orientation?.roll ?? defaultOrientation.roll
+      };
+      flyToPosition(
+        preset.longitude,
+        preset.latitude,
+        preset.height,
+        preset.duration ?? defaultFlyDuration,
+        targetOrientation
+      );
     }
   }
   

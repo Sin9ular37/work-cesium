@@ -1,30 +1,15 @@
 import { createLogger } from '../utils/logger';
+import { APP_CONFIG, cloneConfigSection } from './appConfig';
 
 /**
  * 3DTiles路径配置（独立服务方式）
  */
 
-const MODE = import.meta.env.MODE
+const MODE = import.meta.env.MODE;
 const logger = createLogger('TilesetsConfig', { level: 'warn' });
 
 // 3DTiles 服务配置
-export const TILESET_SERVICES = {
-  // 开发环境：本地Python HTTP服务器
-  development: {
-    baseUrl: "http://localhost:8888",
-    buildings: "/tileset.json"  // 直接访问根目录的tileset.json
-  },
-
-  // 生产环境：生产服务器
-  // production: {
-  //   baseUrl: "https://your-tiles-server.com",
-  //   buildings: "/3dtiles/tileset.json"
-  // }
-  production: {
-    baseUrl: "http://localhost:8899",
-    buildings: "/tileset.json"
-  }
-}
+export const TILESET_SERVICES = cloneConfigSection(APP_CONFIG.tilesets?.services || {});
 
 /**
  * 获取 3DTiles 路径

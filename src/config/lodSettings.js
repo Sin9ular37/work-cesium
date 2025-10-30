@@ -1,52 +1,29 @@
+import { APP_CONFIG, cloneConfigSection } from './appConfig';
+
+const displayConfig = APP_CONFIG.display || {};
+const thresholdsConfig = displayConfig.thresholds || {};
+const labelRulesConfig = displayConfig.labelLimitRules || {};
+const gridOffsetsConfig = displayConfig.gridOffsets || {};
+
 /**
- * LOD 与标注控制相关配置。
- * 将阈值、滞回、标注数量等分离成独立模块，便于在组件外复用与维护。
+ * LOD 与标注控制相关配置，统一从 APP_CONFIG 中派生，确保配置集中管理。
  */
+export const DISPLAY_THRESHOLDS = cloneConfigSection(thresholdsConfig);
 
-export const DISPLAY_THRESHOLDS = {
-  showTilesBelow: 500,
-  hideTilesAbove: 700
-};
+export const LOD_HYSTERESIS = displayConfig.hysteresis ?? 0;
 
-export const LOD_HYSTERESIS = 150;
-
-export const GRID_LAYER_HEIGHT_OFFSET = 150;
-export const GRID_LABEL_HEIGHT_OFFSET = GRID_LAYER_HEIGHT_OFFSET;
-
-const DEFAULT_LABEL_LIMIT_RULES = [
-  { maxDistance: 500, limit: 20 },
-  { maxDistance: 1000, limit: 15 },
-  { maxDistance: 2000, limit: 10 },
-  { maxDistance: 4000, limit: 5 },
-  { maxDistance: Number.POSITIVE_INFINITY, limit: 3 }
-];
+export const GRID_LAYER_HEIGHT_OFFSET = gridOffsetsConfig.layer ?? 0;
+export const GRID_LABEL_HEIGHT_OFFSET = gridOffsetsConfig.label ?? GRID_LAYER_HEIGHT_OFFSET;
 
 /**
  * 按层级划分的标注数量限制。可根据业务需要进一步调整。
  */
-export const LABEL_LIMIT_RULES = {
-  default: DEFAULT_LABEL_LIMIT_RULES,
-  district: [
-    { maxDistance: 60000, limit: 20 },
-    { maxDistance: 120000, limit: 12 },
-    { maxDistance: Number.POSITIVE_INFINITY, limit: 8 }
-  ],
-  township: [
-    { maxDistance: 8000, limit: 20 },
-    { maxDistance: 20000, limit: 12 },
-    { maxDistance: Number.POSITIVE_INFINITY, limit: 6 }
-  ],
-  community: [
-    { maxDistance: 5000, limit: 20 },
-    { maxDistance: 12000, limit: 10 },
-    { maxDistance: Number.POSITIVE_INFINITY, limit: 5 }
-  ],
-  grid: [
-    { maxDistance: 1500, limit: 24 },
-    { maxDistance: 4000, limit: 16 },
-    { maxDistance: Number.POSITIVE_INFINITY, limit: 8 }
-  ]
-};
+export const LABEL_LIMIT_RULES = cloneConfigSection(labelRulesConfig);
+
+const DEFAULT_LABEL_LIMIT_RULES =
+  LABEL_LIMIT_RULES.default && Array.isArray(LABEL_LIMIT_RULES.default)
+    ? LABEL_LIMIT_RULES.default
+    : [];
 
 function resolveRules(layerKey, overrides) {
   if (Array.isArray(overrides) && overrides.length > 0) {

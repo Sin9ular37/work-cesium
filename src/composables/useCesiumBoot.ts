@@ -20,6 +20,7 @@ import { useTilesetManagement } from './useTilesetManagement';
 import { useBasemapControl } from './useBasemapControl';
 import { DEFAULT_CAMERA_VIEW } from '../constants/cesium';
 import { createLogger } from '../utils/logger';
+import { APP_CONFIG } from '../config/appConfig';
 import { applySceneOptimizations, applyDefaultCameraView, setupSceneLogging } from '../modules/cesium/bootstrap';
 import {
   createViewerContext,
@@ -28,6 +29,18 @@ import {
   type ViewerBootContext,
   type ViewerPluginDisposer
 } from '../modules/cesium/initViewer';
+
+const tilesetConfig = APP_CONFIG.tileset || {};
+const tilesetQualityTiers = tilesetConfig.qualityTiers || [];
+const tilesetGridQuality = tilesetConfig.gridQuality || {};
+const tilesetSseRange = tilesetConfig.screenSpaceErrorRange || {};
+const tilesetMemoryRange = tilesetConfig.memoryUsageRange || {};
+const tilesetDynamicConfig = tilesetConfig.dynamicScreenSpaceError || {};
+const tilesetSwitchDelayMs = tilesetConfig.switchDelayMs ?? 180;
+const cesiumConfig = APP_CONFIG.cesium || {};
+const presetPositions = cesiumConfig.presetPositions || {};
+const buildingsPreset = presetPositions.buildings || null;
+const defaultCameraOrientation = cesiumConfig.camera?.defaultOrientation || {};
 
 export interface CesiumBootOptions {
   cesiumContainer: Ref<HTMLDivElement | null>;
@@ -604,7 +617,7 @@ function checkZoomLevelAndToggleDisplay() {
     }
     currentDisplay = targetMode;
     logger(`✅ 模式切换为: ${currentDisplay} (距离: ${distance.toFixed(0)}m)`);
-  }, 180);
+  }, tilesetSwitchDelayMs);
 }
 
 // 新增：显示3D Tiles
@@ -638,28 +651,54 @@ function updateTilesetQuality(distance, activeLodLayer) {
   const tileset = buildingsTileset.value;
   if (!tileset || !Number.isFinite(distance)) return;
 
-  let targetSse;
-  let targetMemory;
+  const sseMin = Number.isFinite(tilesetSseRange.min) ? tilesetSseRange.min : 1.8;
+  const sseMax = Number.isFinite(tilesetSseRange.max) ? tilesetSseRange.max : 12;
+  const memMin = Number.isFinite(tilesetMemoryRange.min) ? tilesetMemoryRange.min : 256;
+  const memMax = Number.isFinite(tilesetMemoryRange.max) ? tilesetMemoryRange.max : 1536;
+  const disableDynamicBelow = Number.isFinite(tilesetDynamicConfig.disableBelowDistance)
+    ? tilesetDynamicConfig.disableBelowDistance
+    : 0;
+
+  let targetSse = tileset.maximumScreenSpaceError ?? sseMax;
+  let targetMemory = tileset.maximumMemoryUsage ?? memMax;
+  let targetDynamic =
+    typeof tileset.dynamicScreenSpaceError === 'boolean'
+      ? tileset.dynamicScreenSpaceError
+      : true;
 
   if (activeLodLayer === 'grid') {
-    targetSse = 2.0;
-    targetMemory = 1024;
-  } else if (distance < 900) {
-    targetSse = 2.4;
-    targetMemory = 896;
-  } else if (distance < 1600) {
-    targetSse = 3.2;
-    targetMemory = 768;
-  } else if (distance < 2800) {
-    targetSse = 5.0;
-    targetMemory = 640;
-  } else {
-    targetSse = 7.5;
-    targetMemory = 512;
+    if (Number.isFinite(tilesetGridQuality.maximumScreenSpaceError)) {
+      targetSse = tilesetGridQuality.maximumScreenSpaceError;
+    }
+    if (Number.isFinite(tilesetGridQuality.maximumMemoryUsage)) {
+      targetMemory = tilesetGridQuality.maximumMemoryUsage;
+    }
+    if (tilesetGridQuality.dynamicScreenSpaceError !== undefined) {
+      targetDynamic = !!tilesetGridQuality.dynamicScreenSpaceError;
+    }
+  } else if (tilesetQualityTiers.length > 0) {
+    let matchedTier = tilesetQualityTiers[tilesetQualityTiers.length - 1];
+    for (const tier of tilesetQualityTiers) {
+      if (!Number.isFinite(tier.maxDistance) || distance < tier.maxDistance) {
+        matchedTier = tier;
+        break;
+      }
+    }
+    if (matchedTier) {
+      if (Number.isFinite(matchedTier.maximumScreenSpaceError)) {
+        targetSse = matchedTier.maximumScreenSpaceError;
+      }
+      if (Number.isFinite(matchedTier.maximumMemoryUsage)) {
+        targetMemory = matchedTier.maximumMemoryUsage;
+      }
+      if (matchedTier.dynamicScreenSpaceError !== undefined) {
+        targetDynamic = !!matchedTier.dynamicScreenSpaceError;
+      }
+    }
   }
 
-  targetSse = Cesium.Math.clamp(targetSse, 1.8, 12);
-  targetMemory = Math.max(256, Math.min(targetMemory, 1536));
+  targetSse = Cesium.Math.clamp(targetSse, sseMin, sseMax);
+  targetMemory = Math.max(memMin, Math.min(targetMemory, memMax));
 
   if (typeof tileset.maximumScreenSpaceError === 'number') {
     if (lastTilesetSse == null || Math.abs(lastTilesetSse - targetSse) > 0.05) {
@@ -675,11 +714,17 @@ function updateTilesetQuality(distance, activeLodLayer) {
     }
   }
 
-  if (distance < 1200 || activeLodLayer === 'grid') {
-    tileset.dynamicScreenSpaceError = false;
-  } else {
-    tileset.dynamicScreenSpaceError = true;
+  if (activeLodLayer === 'grid') {
+    tileset.dynamicScreenSpaceError = targetDynamic;
+    return;
   }
+
+  if (Number.isFinite(disableDynamicBelow) && distance < disableDynamicBelow) {
+    tileset.dynamicScreenSpaceError = false;
+    return;
+  }
+
+  tileset.dynamicScreenSpaceError = targetDynamic;
 }
 
 // 修改preloadBuildings函数，添加防重复加载
@@ -714,15 +759,35 @@ function flyToBuildings() {
     return;
   }
 
-  activeViewer.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(126.53, 45.8, 1500),
-    orientation: {
-      heading: Cesium.Math.toRadians(0),
-      pitch: Cesium.Math.toRadians(-25),
-      roll: 0
-    },
-    duration: 1.0
-  });
+  if (buildingsPreset) {
+    const { longitude, latitude, height, orientation, duration } = buildingsPreset as {
+      longitude?: number;
+      latitude?: number;
+      height?: number;
+      orientation?: { heading?: number; pitch?: number; roll?: number };
+      duration?: number;
+    };
+
+    if (
+      Number.isFinite(longitude) &&
+      Number.isFinite(latitude) &&
+      Number.isFinite(height)
+    ) {
+      const orientSource = orientation ?? defaultCameraOrientation;
+      activeViewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(longitude!, latitude!, height!),
+        orientation: {
+          heading: Cesium.Math.toRadians(orientSource?.heading ?? 0),
+          pitch: Cesium.Math.toRadians(orientSource?.pitch ?? -75),
+          roll: Cesium.Math.toRadians(orientSource?.roll ?? 0)
+        },
+        duration: duration ?? 1.0
+      });
+      return;
+    }
+  }
+
+  flyToDefaultCamera(1.0);
 }
 
 // 切换建筑显示

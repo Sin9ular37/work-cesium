@@ -1,5 +1,10 @@
 import { ref } from 'vue';
 import { createLogger } from '../utils/logger';
+import { APP_CONFIG } from '../config/appConfig';
+
+const measurementConfig = APP_CONFIG.measurement || {};
+const measurementPointStyle = measurementConfig.pointStyle || {};
+const measurementLabelStyle = measurementConfig.labelStyle || {};
 
 export function useMeasurementTools({
   Cesium,
@@ -164,23 +169,40 @@ export function useMeasurementTools({
 
     measurementPoints.value = measurementPoints.value.concat([{ position, number: pointNumber, height }]);
 
+    const pointColor = measurementPointStyle.color
+      ? Cesium.Color.fromCssColorString(measurementPointStyle.color)
+      : Cesium.Color.YELLOW;
+    const pointOutlineColor = measurementPointStyle.outlineColor
+      ? Cesium.Color.fromCssColorString(measurementPointStyle.outlineColor)
+      : Cesium.Color.BLACK;
+    const labelFillColor = measurementLabelStyle.fillColor
+      ? Cesium.Color.fromCssColorString(measurementLabelStyle.fillColor)
+      : Cesium.Color.WHITE;
+    const labelOutlineColor = measurementLabelStyle.outlineColor
+      ? Cesium.Color.fromCssColorString(measurementLabelStyle.outlineColor)
+      : Cesium.Color.BLACK;
+    const labelPixelOffset = measurementLabelStyle.pixelOffset || {};
+
     const pointEntity = viewer.entities.add({
       position,
       point: {
-        pixelSize: 16,
-        color: Cesium.Color.YELLOW,
-        outlineColor: Cesium.Color.BLACK,
-        outlineWidth: 3,
+        pixelSize: measurementPointStyle.pixelSize ?? 16,
+        color: pointColor,
+        outlineColor: pointOutlineColor,
+        outlineWidth: measurementPointStyle.outlineWidth ?? 3,
         heightReference: Cesium.HeightReference.NONE,
         scaleByDistance: undefined
       },
       label: {
         text: pointNumber.toString(),
-        font: '16pt Arial Bold',
-        fillColor: Cesium.Color.WHITE,
-        outlineColor: Cesium.Color.BLACK,
-        outlineWidth: 3,
-        pixelOffset: new Cesium.Cartesian2(0, -35),
+        font: measurementLabelStyle.font ?? '16pt Arial Bold',
+        fillColor: labelFillColor,
+        outlineColor: labelOutlineColor,
+        outlineWidth: measurementLabelStyle.outlineWidth ?? 3,
+        pixelOffset: new Cesium.Cartesian2(
+          labelPixelOffset.x ?? 0,
+          labelPixelOffset.y ?? -35
+        ),
         heightReference: Cesium.HeightReference.NONE,
         scaleByDistance: undefined
       }

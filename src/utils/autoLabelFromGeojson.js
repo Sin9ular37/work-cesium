@@ -1,4 +1,8 @@
 import * as Cesium from "cesium"
+import { APP_CONFIG } from "../config/appConfig"
+
+const autoLabelConfig = APP_CONFIG.autoLabel || {}
+const defaultStyleConfig = autoLabelConfig.defaultStyle || {}
 
 /**
  * 从 GeoJSON 对象自动生成基于 3D Tiles 高度的标注（低耦合，便于删除）
@@ -33,6 +37,9 @@ export function autoLabelFromGeojson({
   if (!viewer || !dataSource || !labelCollection) return () => {};
 
   const created = [];
+
+  const defaults = createDefaultLabelStyle(defaultStyleConfig);
+  const defaultDistanceCondition = defaultStyleConfig.distanceDisplayCondition || {};
 
   // 辅助：从实体提取可用名称
   function getEntityName(entity) {
@@ -130,31 +137,23 @@ export function autoLabelFromGeojson({
     const initialHeight = Number.isFinite(preferredHeight) ? preferredHeight : simpleHeight(carto);
     const pos = Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, initialHeight);
 
-    const defaults = {
-      font: '16px Microsoft YaHei',
-      fillColor: Cesium.Color.WHITE,
-      outlineColor: Cesium.Color.BLACK,
-      outlineWidth: 2,
-      style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-      pixelOffset: new Cesium.Cartesian2(0, -15),
-      heightReference: Cesium.HeightReference.NONE,
-      disableDepthTestDistance: Number.POSITIVE_INFINITY,
-      scale: 1.2,
-      horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-      verticalOrigin: Cesium.VerticalOrigin.CENTER
-    };
-
     // 处理 maxVisibleDistance 参数
-    const maxVisibleDistance = labelStyle.maxVisibleDistance !== undefined ? labelStyle.maxVisibleDistance : 5000;
+    const maxVisibleDistance =
+      labelStyle.maxVisibleDistance !== undefined
+        ? labelStyle.maxVisibleDistance
+        : defaultDistanceCondition.far ?? 5000;
     const { maxVisibleDistance: _, ...restLabelStyle } = labelStyle;
-    
+
     const finalStyle = { ...defaults, ...restLabelStyle };
-    
+
     // 如果指定了 maxVisibleDistance，添加距离显示条件
     if (maxVisibleDistance > 0) {
-      finalStyle.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0.0, maxVisibleDistance);
+      finalStyle.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(
+        defaultDistanceCondition.near ?? 0.0,
+        maxVisibleDistance
+      );
     }
-    
+
     const label = labelCollection.add({ position: pos, text, ...finalStyle });
     created.push(label);
 
@@ -195,6 +194,34 @@ export function autoLabelFromGeojson({
     } finally {
       created.length = 0;
     }
+  };
+}
+
+function createDefaultLabelStyle(styleConfig = {}) {
+  const pixelOffset = styleConfig.pixelOffset || {};
+  const font = styleConfig.font ?? '16px Microsoft YaHei';
+  const fillHex = styleConfig.fillColor ?? '#FFFFFF';
+  const outlineHex = styleConfig.outlineColor ?? '#000000';
+  const horizontalKey = styleConfig.horizontalOrigin ?? 'CENTER';
+  const verticalKey = styleConfig.verticalOrigin ?? 'CENTER';
+  const heightReferenceKey = styleConfig.heightReference ?? 'NONE';
+  const styleKey = styleConfig.style ?? 'FILL_AND_OUTLINE';
+
+  return {
+    font,
+    fillColor: Cesium.Color.fromCssColorString(fillHex),
+    outlineColor: Cesium.Color.fromCssColorString(outlineHex),
+    outlineWidth: styleConfig.outlineWidth ?? 2,
+    style: Cesium.LabelStyle[styleKey] ?? Cesium.LabelStyle.FILL_AND_OUTLINE,
+    pixelOffset: new Cesium.Cartesian2(pixelOffset.x ?? 0, pixelOffset.y ?? -15),
+    heightReference: Cesium.HeightReference[heightReferenceKey] ?? Cesium.HeightReference.NONE,
+    disableDepthTestDistance:
+      styleConfig.disableDepthTestDistance ?? Number.POSITIVE_INFINITY,
+    scale: styleConfig.scale ?? 1.2,
+    horizontalOrigin:
+      Cesium.HorizontalOrigin[horizontalKey] ?? Cesium.HorizontalOrigin.CENTER,
+    verticalOrigin:
+      Cesium.VerticalOrigin[verticalKey] ?? Cesium.VerticalOrigin.CENTER
   };
 }
 

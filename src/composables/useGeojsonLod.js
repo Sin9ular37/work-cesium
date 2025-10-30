@@ -6,6 +6,7 @@ import {
   LOD_HYSTERESIS,
   getLabelLimitForLayer
 } from '../config/lodSettings';
+import { APP_CONFIG, cloneConfigSection } from '../config/appConfig';
 
 export function useGeojsonLod({
   Cesium,
@@ -47,155 +48,56 @@ export function useGeojsonLod({
 
   const geojsonLayerVisible = ref(true);
 
-  const geojsonLodLayers = reactive({
-    district: {
-      name: '区县',
-      url: './松北区县.geojson',
-      dataSource: null,
-      labelDisposer: null,
-      min: 30000,
-      max: 150000,
-      style: {
-        fill: '#2563eb',
-        fillAlpha: 0.25,
-        outline: '#000000',
-        outlineWidth: 3
-      },
-      labelStyle: {
-        font: '30px Microsoft YaHei',
-        fillColor: Cesium.Color.WHITE,
-        outlineColor: Cesium.Color.BLACK,
-        outlineWidth: 2,
-        scale: 1.4,
-        horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-        verticalOrigin: Cesium.VerticalOrigin.CENTER,
-        maxVisibleDistance: 150000,
-        showOnHover: true,
-        showOnClick: true,
-        showArea: true,
-        showDistance: true
-      },
-      interactive: {
-        clickable: true,
-        hoverable: true,
-        hoverStyle: {
-          fill: '#ff6b6b',
-          fillAlpha: 0.4,
-          outline: '#ff0000',
-          outlineWidth: 4
-        }
+  const geojsonTemplates = cloneConfigSection(APP_CONFIG.geojson?.layers || {});
+
+  const buildLabelStyle = (style = {}) => {
+    const {
+      fillColor,
+      outlineColor,
+      horizontalOrigin,
+      verticalOrigin,
+      ...rest
+    } = style;
+    const resolved = { ...rest };
+    try {
+      if (fillColor) {
+        resolved.fillColor = Cesium.Color.fromCssColorString(fillColor);
       }
-    },
-    township: {
-      name: '乡镇',
-      url: './松北乡镇.geojson',
-      dataSource: null,
-      labelDisposer: null,
-      min: 20000,
-      max: 30000,
-      style: {
-        fill: '#16a34a',
-        fillAlpha: 0.25,
-        outline: '#ffffff',
-        outlineWidth: 2
-      },
-      labelStyle: {
-        font: '20px Microsoft YaHei',
-        fillColor: Cesium.Color.WHITE,
-        outlineColor: Cesium.Color.BLACK,
-        outlineWidth: 2,
-        scale: 1.2,
-        horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-        verticalOrigin: Cesium.VerticalOrigin.CENTER,
-        maxVisibleDistance: 30000,
-        showOnHover: true,
-        showOnClick: true,
-        showArea: true
-      },
-      interactive: {
-        clickable: true,
-        hoverable: true,
-        hoverStyle: {
-          fill: '#ff6b6b',
-          fillAlpha: 0.4,
-          outline: '#ff0000',
-          outlineWidth: 3
-        }
+    } catch (_) {}
+    try {
+      if (outlineColor) {
+        resolved.outlineColor = Cesium.Color.fromCssColorString(outlineColor);
       }
-    },
-    community: {
-      name: '社区',
-      url: './松北社区.geojson',
-      dataSource: null,
-      labelDisposer: null,
-      min: 10000,
-      max: 20000,
-      style: {
-        fill: '#f59e0b',
-        fillAlpha: 0.25,
-        outline: '#ffffff',
-        outlineWidth: 2
-      },
-      labelStyle: {
-        font: '18px Microsoft YaHei',
-        fillColor: Cesium.Color.WHITE,
-        outlineColor: Cesium.Color.BLACK,
-        outlineWidth: 1,
-        scale: 1.1,
-        horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-        verticalOrigin: Cesium.VerticalOrigin.CENTER,
-        maxVisibleDistance: 20000,
-        showOnHover: true,
-        showOnClick: true
-      },
-      interactive: {
-        clickable: true,
-        hoverable: true,
-        hoverStyle: {
-          fill: '#ff6b6b',
-          fillAlpha: 0.4,
-          outline: '#ff0000',
-          outlineWidth: 2
-        }
-      }
-    },
-    grid: {
-      name: '网格',
-      url: './松北网格.geojson',
-      dataSource: null,
-      labelDisposer: null,
-      min: 0,
-      max: 10000,
-      style: {
-        fill: '#ef4444',
-        fillAlpha: 0.18,
-        outline: '#ffffff',
-        outlineWidth: 1
-      },
-      labelStyle: {
-        font: '15px Microsoft YaHei',
-        fillColor: Cesium.Color.WHITE,
-        outlineColor: Cesium.Color.BLACK,
-        outlineWidth: 1,
-        scale: 1.0,
-        horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-        verticalOrigin: Cesium.VerticalOrigin.CENTER,
-        maxVisibleDistance: 10000,
-        showOnHover: true,
-        showOnClick: true
-      },
-      interactive: {
-        clickable: true,
-        hoverable: true,
-        hoverStyle: {
-          fill: '#ff6b6b',
-          fillAlpha: 0.4,
-          outline: '#ff0000',
-          outlineWidth: 2
-        }
-      }
+    } catch (_) {}
+    if (horizontalOrigin && Cesium.HorizontalOrigin?.[horizontalOrigin]) {
+      resolved.horizontalOrigin = Cesium.HorizontalOrigin[horizontalOrigin];
+    } else if (!resolved.horizontalOrigin) {
+      resolved.horizontalOrigin = Cesium.HorizontalOrigin.CENTER;
     }
-  });
+    if (verticalOrigin && Cesium.VerticalOrigin?.[verticalOrigin]) {
+      resolved.verticalOrigin = Cesium.VerticalOrigin[verticalOrigin];
+    } else if (!resolved.verticalOrigin) {
+      resolved.verticalOrigin = Cesium.VerticalOrigin.CENTER;
+    }
+    return resolved;
+  };
+
+  const geojsonLodLayers = reactive(
+    Object.entries(geojsonTemplates).reduce((acc, [key, template]) => {
+      acc[key] = {
+        name: template.name,
+        url: template.url,
+        dataSource: null,
+        labelDisposer: null,
+        min: template.minDistance,
+        max: template.maxDistance,
+        style: template.style,
+        labelStyle: buildLabelStyle(template.labelStyle),
+        interactive: template.interactive || {}
+      };
+      return acc;
+    }, {})
+  );
 
   const currentActiveLayer = ref(null);
   const labelCollections = reactive({
@@ -216,12 +118,15 @@ export function useGeojsonLod({
   });
   const searchFilter = reactive({ district: true, township: true, community: true, grid: true });
 
+  const flyCameraRangeConfig = APP_CONFIG.geojson?.flyCameraRange || {};
   const FLY_CAMERA_RANGE = {
-    district: 50000,
-    township: 25000,
-    community: 15000,
-    grid: 5000
+    district: flyCameraRangeConfig.district ?? 50000,
+    township: flyCameraRangeConfig.township ?? 25000,
+    community: flyCameraRangeConfig.community ?? 15000,
+    grid: flyCameraRangeConfig.grid ?? 5000
   };
+
+  const highlightConfig = APP_CONFIG.highlight || {};
 
   const ensureViewer = () => {
     const viewer = getViewer?.();
@@ -771,8 +676,8 @@ export function useGeojsonLod({
   const highlightEntity = (entity, options = {}) => {
     const viewer = getViewer?.();
     if (!entity || !viewer) return;
-    const durationMs = options.durationMs ?? 3000;
-    const intervalMs = options.intervalMs ?? 500;
+    const durationMs = options.durationMs ?? highlightConfig.durationMs ?? 3000;
+    const intervalMs = options.intervalMs ?? highlightConfig.intervalMs ?? 500;
     const now = Cesium.JulianDate.now();
 
     const layerKey = options.layerKey;

@@ -6,45 +6,14 @@
 import * as Cesium from "cesium"
 import { getTilesetPath, checkTilesetExists, checkTilesetService } from "../config/tilesetsConfig"
 import { createLogger } from "./logger"
+import { APP_CONFIG, cloneConfigSection } from "../config/appConfig"
 
 const logger = createLogger("TilesetLoader", { level: "info" })
 
 /**
  * 3DTiles加载配置
  */
-export const TILESET_CONFIG = {
-  // 默认配置
-  default: {
-    show: false, // 默认隐藏
-    heightOffset: 0, // 高度偏移
-    debug: false, // 调试模式
-    cullWithChildrenBounds: true, // 优化渲染
-    dynamicScreenSpaceError: true, // 动态屏幕空间误差
-    maximumScreenSpaceError: 48, // 合理SSE，保证视角内加载
-    maximumMemoryUsage: 256, // 降低最大内存使用量(MB)
-    skipLevelOfDetail: true, // 跳过细节层次
-    baseScreenSpaceError: 2048, // 提高基础SSE
-    skipScreenSpaceErrorFactor: 24, // 提高跳过因子
-    skipLevels: 2, // 多跳一级，进一步减载
-    immediatelyLoadDesiredLevelOfDetail: false, // 立即加载所需细节层次
-    loadSiblings: false, // 不加载兄弟节点
-    clippingPlanes: undefined, // 裁剪平面
-
-    // 新增：流式加载/网络优化（更激进）
-    cullRequestsWhileMoving: true,
-    cullRequestsWhileMovingMultiplier: 20.0,
-    preferLeaves: true,
-    progressiveResolutionHeightFraction: 0.75,
-    dynamicScreenSpaceErrorDensity: 0.00278,
-    foveatedScreenSpaceError: true,
-    foveatedConeSize: 0.1,
-    foveatedMinimumScreenSpaceErrorRelaxation: 0.0,
-    foveatedTimeDelay: 0.2,
-
-    // 限制一次加载的瓦片数量（运行期属性）
-    maximumNumberOfLoadedTiles: 128
-  }
-}
+export const TILESET_CONFIG = cloneConfigSection(APP_CONFIG.tilesetLoader || {})
 
 /**
  * 加载3DTiles数据集

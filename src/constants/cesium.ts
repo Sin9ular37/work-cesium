@@ -1,4 +1,5 @@
 import type { HeadingPitchRoll, Cartesian3 } from 'cesium';
+import { APP_CONFIG, cloneConfigSection } from '@/config/appConfig';
 
 export interface CameraPose {
   destination: Cartesian3 | {
@@ -21,28 +22,17 @@ export interface ZoomThresholds {
 
 export type CesiumLogHandler = (...args: unknown[]) => void;
 
-export const DEFAULT_CAMERA_VIEW: CameraPose = {
-  destination: {
-    longitude: 126.535263,
-    latitude: 45.803411,
-    height: 50000
-  },
-  orientation: {
-    heading: 0,
-    pitch: -75,
-    roll: 0
-  },
-  duration: 0
-};
+const cameraConfig = APP_CONFIG.camera || {};
+const displayConfig = APP_CONFIG.display || {};
 
-export const DEFAULT_ZOOM_LEVELS = {
-  maxLevel: 18,
-  minLevel: 10
-};
+export const DEFAULT_CAMERA_VIEW: CameraPose = cloneConfigSection(
+  cameraConfig.defaultView || {}
+) as CameraPose;
 
-export const DEFAULT_DISPLAY_THRESHOLDS: ZoomThresholds = {
-  showTilesBelow: 500,
-  hideTilesAbove: 700
-};
+export const DEFAULT_ZOOM_LEVELS = cloneConfigSection(cameraConfig.zoomLevels || {});
+
+export const DEFAULT_DISPLAY_THRESHOLDS: ZoomThresholds = cloneConfigSection(
+  displayConfig.thresholds || {}
+) as ZoomThresholds;
 
 export const CESIUM_BOOT_LOG_PREFIX = '[CesiumBoot]';

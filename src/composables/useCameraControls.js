@@ -1,4 +1,13 @@
 import { ref } from 'vue';
+import { APP_CONFIG } from '../config/appConfig';
+
+const cameraControlsConfig = APP_CONFIG.cameraControls || {};
+const resolutionScaleRange = cameraControlsConfig.resolutionScaleRange || {};
+const resolutionScaleMin = resolutionScaleRange.min ?? 0.6;
+const resolutionScaleMaxWhileMoving = resolutionScaleRange.maxWhileMoving ?? 0.75;
+const moveEndDebounceMs = cameraControlsConfig.moveEndDebounceMs ?? 120;
+const wheelIdleDebounceMs = cameraControlsConfig.wheelIdleDebounceMs ?? 200;
+const minTilesetSseWhileMoving = cameraControlsConfig.minTilesetSseWhileMoving ?? 8;
 
 export function useCameraControls({
   Cesium,
@@ -74,7 +83,10 @@ export function useCameraControls({
 
       try {
         prevResolutionScale = viewer.resolutionScale ?? 1;
-        const targetScale = Math.max(0.6, Math.min(prevResolutionScale, 0.75));
+        const targetScale = Math.max(
+          resolutionScaleMin,
+          Math.min(prevResolutionScale, resolutionScaleMaxWhileMoving)
+        );
         if (viewer.resolutionScale > targetScale) {
           viewer.resolutionScale = targetScale;
         }
@@ -94,15 +106,15 @@ export function useCameraControls({
         }
       } catch (_) {}
 
-      const tileset = getActiveTileset?.();
-      if (tileset) {
-        try {
-          tileset._prevSSE = tileset.maximumScreenSpaceError;
-          const baseline = tileset._prevSSE ?? 6;
-          tileset.maximumScreenSpaceError = Math.max(baseline, 8);
-        } catch (_) {}
-      }
-    };
+        const tileset = getActiveTileset?.();
+        if (tileset) {
+          try {
+            tileset._prevSSE = tileset.maximumScreenSpaceError;
+            const baseline = tileset._prevSSE ?? 6;
+            tileset.maximumScreenSpaceError = Math.max(baseline, minTilesetSseWhileMoving);
+          } catch (_) {}
+        }
+      };
 
     moveEndHandler = () => {
       if (moveEndTimer) clearTimeout(moveEndTimer);
@@ -159,7 +171,7 @@ export function useCameraControls({
         try {
           onCameraIdle?.();
         } catch (_) {}
-      }, 120);
+      }, moveEndDebounceMs);
     };
 
     try {
@@ -177,7 +189,7 @@ export function useCameraControls({
           try {
             onCameraIdle?.();
           } catch (_) {}
-        }, 200);
+        }, wheelIdleDebounceMs);
       }, Cesium.ScreenSpaceEventType.WHEEL);
       wheelHandlerInstalled = true;
     } catch (err) {

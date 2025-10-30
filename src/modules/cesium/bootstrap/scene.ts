@@ -7,6 +7,7 @@ import {
 } from 'cesium';
 
 import type { CesiumLogHandler } from '@/constants/cesium';
+import { APP_CONFIG } from '@/config/appConfig';
 
 export function applySceneOptimizations(
   viewer: Viewer,
@@ -14,22 +15,40 @@ export function applySceneOptimizations(
 ): void {
   const { scene } = viewer;
 
-  scene.highDynamicRange = false;
-  scene.logarithmicDepthBuffer = false;
-  scene.fog.enabled = false;
-  scene.skyAtmosphere.show = false;
-  scene.sun.show = false;
-  scene.moon.show = false;
+  const sceneConfig = APP_CONFIG.scene || {};
+  const toggles = sceneConfig.toggles || {};
+  const requestRender = sceneConfig.requestRender || {};
+  const globeConfig = sceneConfig.globe || {};
+  const controllerConfig = sceneConfig.cameraController || {};
+  const clockConfig = sceneConfig.clock || {};
 
-  scene.requestRenderMode = true;
-  scene.maximumRenderTimeChange = 1000 / 30;
+  scene.highDynamicRange = !!toggles.highDynamicRange;
+  scene.logarithmicDepthBuffer = !!toggles.logarithmicDepthBuffer;
+  scene.fog.enabled = !!toggles.fog;
+  scene.skyAtmosphere.show = !!toggles.skyAtmosphere;
+  scene.sun.show = !!toggles.sun;
+  scene.moon.show = !!toggles.moon;
 
-  scene.globe.maximumScreenSpaceError = 6.0;
-  scene.globe.tileCacheSize = 800;
+  scene.requestRenderMode = !!requestRender.enabled;
+  if (Number.isFinite(requestRender.maximumRenderTimeChangeMs)) {
+    scene.maximumRenderTimeChange = requestRender.maximumRenderTimeChangeMs;
+  }
+
+  if (scene.globe) {
+    if (Number.isFinite(globeConfig.maximumScreenSpaceError)) {
+      scene.globe.maximumScreenSpaceError = globeConfig.maximumScreenSpaceError;
+    }
+    if (Number.isFinite(globeConfig.tileCacheSize)) {
+      scene.globe.tileCacheSize = globeConfig.tileCacheSize;
+    }
+  }
 
   const controller = scene.screenSpaceCameraController;
-  controller.enableCollisionDetection = true;
-  controller.minimumCollisionTerrainHeight = 5.0;
+  controller.enableCollisionDetection =
+    controllerConfig.enableCollisionDetection ?? controller.enableCollisionDetection;
+  if (Number.isFinite(controllerConfig.minimumCollisionTerrainHeight)) {
+    controller.minimumCollisionTerrainHeight = controllerConfig.minimumCollisionTerrainHeight;
+  }
 
   try {
     viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
@@ -52,7 +71,7 @@ export function applySceneOptimizations(
     /* ignore */
   }
 
-  viewer.clock.shouldAnimate = false;
+  viewer.clock.shouldAnimate = !!clockConfig.shouldAnimate;
 }
 
 export function applyDefaultCameraView(

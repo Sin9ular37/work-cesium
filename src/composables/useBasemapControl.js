@@ -1,6 +1,9 @@
 import { ref } from 'vue';
+import { APP_CONFIG } from '../config/appConfig';
 
-const DEFAULT_ARCGIS_URL = 'https://data.hrbmap.org.cn/server/rest/services/Image/RS2024_4530/MapServer';
+const DEFAULT_ARCGIS_URL =
+  APP_CONFIG.basemap?.defaultArcGisUrl ??
+  'https://data.hrbmap.org.cn/server/rest/services/Image/RS2024_4530/MapServer';
 
 export function useBasemapControl({
   Cesium,

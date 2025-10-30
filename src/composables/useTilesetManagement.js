@@ -1,4 +1,7 @@
 import { ref } from 'vue';
+import { APP_CONFIG, cloneConfigSection } from '../config/appConfig';
+
+const clippingConfig = cloneConfigSection(APP_CONFIG.tileset?.clipping || {});
 
 export function useTilesetManagement({
   Cesium,
@@ -37,7 +40,17 @@ export function useTilesetManagement({
   const installClipping = (viewer, tileset) => {
     if (!installRegionalClipping) return;
     try {
-      clippingDisposer = installRegionalClipping(viewer, tileset, { enabled: true }) || null;
+      const options = {
+        enabled: clippingConfig.enabled ?? true,
+        debugEdges: clippingConfig.debugEdges ?? false,
+        altitudeMargin: clippingConfig.altitudeMargin,
+        minHeight: clippingConfig.minHeight,
+        maxHeightCap: clippingConfig.maxHeightCap,
+        idleDebounceMs: clippingConfig.idleDebounceMs,
+        moveThrottleMs: clippingConfig.moveThrottleMs,
+        halfSizeRules: cloneConfigSection(clippingConfig.halfSizeRules || [])
+      };
+      clippingDisposer = installRegionalClipping(viewer, tileset, options) || null;
     } catch (error) {
       clippingDisposer = null;
       logger('[useTilesetManagement] 安装区域裁剪失败', error);

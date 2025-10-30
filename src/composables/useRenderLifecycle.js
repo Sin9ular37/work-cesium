@@ -1,3 +1,7 @@
+import { APP_CONFIG } from '../config/appConfig';
+
+const renderLifecycleConfig = APP_CONFIG.renderLifecycle || {};
+
 export function useRenderLifecycle({
   cesiumContainer,
   getViewer,
@@ -6,8 +10,8 @@ export function useRenderLifecycle({
   onBeforeDestroy = () => {},
   onAfterRestart = () => {},
   logger = () => {},
-  restartCooldownMs = 2000,
-  restartDelayMs = 300
+  restartCooldownMs = renderLifecycleConfig.restartCooldownMs ?? 2000,
+  restartDelayMs = renderLifecycleConfig.restartDelayMs ?? 300
 }) {
   let resizeObserver = null;
   let visibilityHandler = null;
