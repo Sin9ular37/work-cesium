@@ -1,5 +1,5 @@
 import type { HeadingPitchRoll, Cartesian3 } from 'cesium';
-import { APP_CONFIG, cloneConfigSection } from '@/config/appConfig';
+import { APP_CONFIG, cloneConfigSection } from '../config/appConfig';
 
 export interface CameraPose {
   destination: Cartesian3 | {

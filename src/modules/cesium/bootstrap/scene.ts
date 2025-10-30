@@ -7,7 +7,7 @@ import {
 } from 'cesium';
 
 import type { CesiumLogHandler } from '@/constants/cesium';
-import { APP_CONFIG } from '@/config/appConfig';
+import { APP_CONFIG } from '../../../config/appConfig';
 
 export function applySceneOptimizations(
   viewer: Viewer,
