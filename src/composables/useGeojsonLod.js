@@ -298,6 +298,38 @@ export function useGeojsonLod({
           __labelRefreshBusy[layerKey] = false;
           return;
         }
+        if (layerKey === 'grid') {
+          for (let j = 0; j < slice.length; j++) {
+            const label = slice[j];
+            if (!label || !label.position) continue;
+            if (typeof label.isDestroyed === 'function' && label.isDestroyed()) continue;
+            const parentCollection = label.collection;
+            if (
+              !parentCollection ||
+              (typeof parentCollection.isDestroyed === 'function' && parentCollection.isDestroyed())
+            ) {
+              continue;
+            }
+            const carto = Cesium.Cartographic.fromCartesian(label.position);
+            if (!carto) continue;
+            try {
+              label.position = Cesium.Cartesian3.fromRadians(
+                carto.longitude,
+                carto.latitude,
+                GRID_LABEL_HEIGHT_OFFSET
+              );
+            } catch (_) {}
+          }
+
+          index += batchSize;
+          if (index < visibleLabels.length) {
+            requestAnimationFrame(processBatch);
+          } else {
+            __labelRefreshBusy[layerKey] = false;
+          }
+          return;
+        }
+
         const bases = [];
         for (let j = 0; j < slice.length; j++) {
           const p = slice[j]?.position;
@@ -332,17 +364,7 @@ export function useGeojsonLod({
                 ) {
                   continue;
                 }
-                let pos = clamped[k];
-                if (layerKey === 'grid') {
-                  const carto = Cesium.Cartographic.fromCartesian(pos);
-                  const elevated = Cesium.Cartesian3.fromRadians(
-                    carto.longitude,
-                    carto.latitude,
-                    (carto.height || 0) + GRID_LABEL_HEIGHT_OFFSET
-                  );
-                  pos = elevated;
-                }
-                label.position = pos;
+                label.position = clamped[k];
               }
             }
           })
@@ -921,10 +943,12 @@ export function useGeojsonLod({
   };
 
   const resolveLabelHeight = async (CesiumRef, viewer, layerName, cartographic) => {
-    if (!cartographic) return layerName === '网格' ? GRID_LAYER_HEIGHT_OFFSET : 0;
+    const isGridLayer = layerName === '网格' || layerName === 'grid';
+    if (!cartographic) return isGridLayer ? GRID_LABEL_HEIGHT_OFFSET : 0;
+    if (isGridLayer) return GRID_LABEL_HEIGHT_OFFSET;
     try {
       const scene = viewer && viewer.scene;
-      if (!scene) return layerName === '网格' ? GRID_LAYER_HEIGHT_OFFSET : 0;
+      if (!scene) return 0;
       const base = CesiumRef.Cartesian3.fromRadians(cartographic.longitude, cartographic.latitude, 0);
       const clamped = await scene.clampToHeightMostDetailed([base]);
       let h = 0;
@@ -932,10 +956,9 @@ export function useGeojsonLod({
         const carto = CesiumRef.Cartographic.fromCartesian(clamped[0]);
         h = carto && Number.isFinite(carto.height) ? carto.height : 0;
       }
-      if (layerName === '网格') h += GRID_LAYER_HEIGHT_OFFSET;
       return h;
     } catch (_) {
-      return layerName === '网格' ? GRID_LAYER_HEIGHT_OFFSET : 0;
+      return 0;
     }
   };
 
@@ -967,5 +990,6 @@ export function useGeojsonLod({
     dispose
   };
 }
+
 
 
