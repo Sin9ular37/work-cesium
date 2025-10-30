@@ -18,7 +18,18 @@ import * as Cesium from "cesium"
  *  // 关闭并清理：
  *  disposer && disposer()
  */
-export function autoLabelFromGeojson({ viewer, dataSource, labelStyle = {}, getName, getCartographic, labelCollection, strictName = false, limit, filterEntity }) {
+export function autoLabelFromGeojson({
+  viewer,
+  dataSource,
+  labelStyle = {},
+  getName,
+  getCartographic,
+  getHeight,
+  labelCollection,
+  strictName = false,
+  limit,
+  filterEntity
+}) {
   if (!viewer || !dataSource || !labelCollection) return () => {};
 
   const created = [];
@@ -101,7 +112,23 @@ export function autoLabelFromGeojson({ viewer, dataSource, labelStyle = {}, getN
 
     const lonDeg = Cesium.Math.toDegrees(carto.longitude);
     const latDeg = Cesium.Math.toDegrees(carto.latitude);
-    const pos = Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, simpleHeight(carto));
+
+    let preferredHeight = null;
+    let heightResolution = null;
+
+    if (typeof getHeight === 'function') {
+      try {
+        const result = getHeight(carto, entity);
+        if (result && typeof result.then === 'function') {
+          heightResolution = result;
+        } else if (Number.isFinite(result)) {
+          preferredHeight = result;
+        }
+      } catch (_) {}
+    }
+
+    const initialHeight = Number.isFinite(preferredHeight) ? preferredHeight : simpleHeight(carto);
+    const pos = Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, initialHeight);
 
     const defaults = {
       font: '16px Microsoft YaHei',
@@ -130,6 +157,18 @@ export function autoLabelFromGeojson({ viewer, dataSource, labelStyle = {}, getN
     
     const label = labelCollection.add({ position: pos, text, ...finalStyle });
     created.push(label);
+
+    if (heightResolution) {
+      Promise.resolve(heightResolution)
+        .then((resolvedHeight) => {
+          if (!Number.isFinite(resolvedHeight)) return;
+          if (typeof label.isDestroyed === 'function' && label.isDestroyed()) return;
+          try {
+            label.position = Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, resolvedHeight);
+          } catch (_) {}
+        })
+        .catch(() => {});
+    }
   }
 
   const entities = dataSource.entities?.values || [];
