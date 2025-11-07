@@ -812,23 +812,35 @@ function debugFlyToTileset() {
   if (tileset.ready) {
     execute();
   } else {
-    tileset.readyPromise.then(execute).catch((error) => {
-      logger.warn('[Debug] tileset readyPromise 失败', error);
-    });
+    const readyPromise = tileset.readyPromise;
+    if (readyPromise && typeof readyPromise.then === 'function') {
+      readyPromise.then(execute).catch((error) => {
+        logger.warn('[Debug] tileset readyPromise 失败', error);
+      });
+    } else {
+      logger.warn('[Debug] tileset 缺少 readyPromise，直接执行 zoom');
+      execute();
+    }
   }
 }
 
 function toggleDebugInspector() {
-  if (!viewer) {
+  if (!viewer || !viewer.scene) {
     logger.warn('[Debug] viewer 未初始化，无法切换 Inspector');
     return;
   }
   inspectorVisible.value = !inspectorVisible.value;
   if (inspectorVisible.value) {
     if (!inspectorWidget) {
-      inspectorWidget = new Cesium.CesiumInspector(viewer.scene);
-      inspectorWidget.container.style.right = '16px';
-      inspectorWidget.container.style.bottom = '120px';
+      try {
+        inspectorWidget = new Cesium.CesiumInspector(viewer.scene);
+        inspectorWidget.container.style.right = '16px';
+        inspectorWidget.container.style.bottom = '120px';
+      } catch (error) {
+        inspectorVisible.value = false;
+        logger.warn('[Debug] 创建 CesiumInspector 失败', error);
+        return;
+      }
     }
     inspectorWidget.container.style.display = '';
     inspectorWidget.viewModel.tilesetBoundingVolumes = true;
