@@ -825,15 +825,17 @@ function debugFlyToTileset() {
 }
 
 function toggleDebugInspector() {
-  if (!viewer || !viewer.scene) {
+  const activeViewer = viewer;
+  if (!activeViewer || !activeViewer.scene) {
     logger.warn('[Debug] viewer 未初始化，无法切换 Inspector');
     return;
   }
+  const scene = activeViewer.scene;
   inspectorVisible.value = !inspectorVisible.value;
   if (inspectorVisible.value) {
     if (!inspectorWidget) {
       try {
-        inspectorWidget = new Cesium.CesiumInspector(viewer.scene);
+        inspectorWidget = new Cesium.CesiumInspector(scene);
         inspectorWidget.container.style.right = '16px';
         inspectorWidget.container.style.bottom = '120px';
       } catch (error) {
@@ -843,11 +845,13 @@ function toggleDebugInspector() {
       }
     }
     inspectorWidget.container.style.display = '';
-    inspectorWidget.viewModel.tilesetBoundingVolumes = true;
+    if (inspectorWidget.viewModel) {
+      inspectorWidget.viewModel.tilesetBoundingVolumes = true;
+    }
   } else if (inspectorWidget) {
     inspectorWidget.container.style.display = 'none';
   }
-  viewer.scene.debugShowBoundingVolume = inspectorVisible.value;
+  scene.debugShowBoundingVolume = inspectorVisible.value;
   logger(
     `[Debug] Tileset bounding volumes ${inspectorVisible.value ? '已开启' : '已关闭'}`,
   );
