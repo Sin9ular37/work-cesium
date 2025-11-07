@@ -89,6 +89,10 @@
       <button class="ft-btn" @click="resetView">重置视图</button> -->
     <InfoPanel :controller="infoPanel" />
     <UiFeedbackHost />
+    <div v-if="showDebugTestButton" class="debug-button-stack">
+      <DebugFlyButton @trigger="debugFlyToTileset">定位 Tileset</DebugFlyButton>
+      <DebugFlyButton @trigger="toggleDebugInspector">包围盒</DebugFlyButton>
+    </div>
   </div>
 </template>
 
@@ -99,6 +103,7 @@ import { SearchWidget } from '../modules/search';
 import TopicPanel from '../modules/topicPanel/index.vue';
 import InfoPanel from '../modules/infoPanel/index.vue';
 import UiFeedbackHost from '../modules/ui/UiFeedbackHost.vue';
+import DebugFlyButton from './DebugFlyButton.vue';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
 import { useCesiumBoot } from '../composables/useCesiumBoot';
@@ -133,8 +138,12 @@ const {
   clearMeasurement,
   clearAreaMeasurement,
   activeMeasureTab,
-  showClearButton
+  showClearButton,
+  debugFlyToTileset,
+  toggleDebugInspector
 } = useCesiumBoot({ cesiumContainer });
+
+const showDebugTestButton = true;
 </script>
 <style scoped>
 .cesium-container {
@@ -467,6 +476,16 @@ const {
 .app-header-icon.clickable:active {
   transform: scale(0.95);
   background-color: rgba(255, 255, 255, 0.2);
+}
+
+.debug-button-stack {
+  position: absolute;
+  right: 16px;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1300;
 }
 </style>
 

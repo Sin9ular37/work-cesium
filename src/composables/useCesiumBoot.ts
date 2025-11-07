@@ -55,7 +55,9 @@ export function useCesiumBoot(options: CesiumBootOptions) {
 
   let viewer: Cesium.Viewer | null = null;
   let viewerContext: ViewerBootContext | null = null;
-  let pluginDisposer: ViewerPluginDisposer | null = null;
+let pluginDisposer: ViewerPluginDisposer | null = null;
+let inspectorWidget: Cesium.CesiumInspector | null = null;
+const inspectorVisible = ref(false);
 
   const {
     pauseRenderLoop,
@@ -790,6 +792,55 @@ function flyToBuildings() {
   flyToDefaultCamera(1.0);
 }
 
+function debugFlyToTileset() {
+  const activeViewer = viewer;
+  const tileset = buildingsTileset.value;
+  if (!activeViewer || !tileset) {
+    logger.warn('[Debug] viewer 或 tileset 尚未就绪，无法定位');
+    return;
+  }
+  const execute = () => {
+    try {
+      activeViewer.zoomTo(
+        tileset,
+        new Cesium.HeadingPitchRange(0.0, -0.5, tileset.boundingSphere.radius * 2.0),
+      );
+    } catch (error) {
+      logger.warn('[Debug] zoomTo 执行失败', error);
+    }
+  };
+  if (tileset.ready) {
+    execute();
+  } else {
+    tileset.readyPromise.then(execute).catch((error) => {
+      logger.warn('[Debug] tileset readyPromise 失败', error);
+    });
+  }
+}
+
+function toggleDebugInspector() {
+  if (!viewer) {
+    logger.warn('[Debug] viewer 未初始化，无法切换 Inspector');
+    return;
+  }
+  inspectorVisible.value = !inspectorVisible.value;
+  if (inspectorVisible.value) {
+    if (!inspectorWidget) {
+      inspectorWidget = new Cesium.CesiumInspector(viewer.scene);
+      inspectorWidget.container.style.right = '16px';
+      inspectorWidget.container.style.bottom = '120px';
+    }
+    inspectorWidget.container.style.display = '';
+    inspectorWidget.viewModel.tilesetBoundingVolumes = true;
+  } else if (inspectorWidget) {
+    inspectorWidget.container.style.display = 'none';
+  }
+  viewer.scene.debugShowBoundingVolume = inspectorVisible.value;
+  logger(
+    `[Debug] Tileset bounding volumes ${inspectorVisible.value ? '已开启' : '已关闭'}`,
+  );
+}
+
 // 切换建筑显示
 async function toggleBuildings() {
   const visible = await toggleTilesetInternal();
@@ -1025,6 +1076,14 @@ function beforeViewerDestroy() {
   detachCameraHooks();
   pluginDisposer?.();
   pluginDisposer = null;
+  if (inspectorWidget) {
+    inspectorWidget.destroy();
+    inspectorWidget = null;
+    inspectorVisible.value = false;
+  }
+  if (viewer?.scene) {
+    viewer.scene.debugShowBoundingVolume = false;
+  }
   if (viewerContext) {
     try {
       disposeViewerContext(viewerContext);
@@ -1497,6 +1556,8 @@ function restoreGridBlocksAfterMeasurement() {
     clearMeasurement,
     clearAreaMeasurement,
     activeMeasureTab,
-    showClearButton
+    showClearButton,
+    debugFlyToTileset,
+    toggleDebugInspector
   };
 }
