@@ -211,32 +211,32 @@ export const APP_CONFIG = {
     qualityTiers: [
       {
         maxDistance: 900,
-        maximumScreenSpaceError: 2.4,
-        maximumMemoryUsage: 896,
+        maximumScreenSpaceError: 3.2,
+        maximumMemoryUsage: 768,
         dynamicScreenSpaceError: false
       },
       {
         maxDistance: 1600,
-        maximumScreenSpaceError: 3.2,
-        maximumMemoryUsage: 768,
-        dynamicScreenSpaceError: true
-      },
-      {
-        maxDistance: 2800,
-        maximumScreenSpaceError: 5.0,
+        maximumScreenSpaceError: 4.5,
         maximumMemoryUsage: 640,
         dynamicScreenSpaceError: true
       },
       {
+        maxDistance: 2800,
+        maximumScreenSpaceError: 6.5,
+        maximumMemoryUsage: 512,
+        dynamicScreenSpaceError: true
+      },
+      {
         maxDistance: Number.POSITIVE_INFINITY,
-        maximumScreenSpaceError: 7.5,
+        maximumScreenSpaceError: 8.5,
         maximumMemoryUsage: 512,
         dynamicScreenSpaceError: true
       }
     ],
     gridQuality: {
-      maximumScreenSpaceError: 2.0,
-      maximumMemoryUsage: 1024,
+      maximumScreenSpaceError: 2.8,
+      maximumMemoryUsage: 896,
       dynamicScreenSpaceError: false
     },
     screenSpaceErrorRange: {
@@ -248,7 +248,7 @@ export const APP_CONFIG = {
       max: 1536
     },
     dynamicScreenSpaceError: {
-      disableBelowDistance: 1200
+      disableBelowDistance: 1600
     },
     switchDelayMs: 180,
     clipping: {
@@ -257,8 +257,8 @@ export const APP_CONFIG = {
       altitudeMargin: 1000,
       minHeight: -200,
       maxHeightCap: 8000,
-      idleDebounceMs: 150,
-      moveThrottleMs: 180,
+      idleDebounceMs: 250,
+      moveThrottleMs: 260,
       halfSizeRules: [
         { maxHeight: 300, halfSize: 800 },
         { maxHeight: 800, halfSize: 1500 },
@@ -371,7 +371,7 @@ export const APP_CONFIG = {
       foveatedConeSize: 0.1,
       foveatedMinimumScreenSpaceErrorRelaxation: 0.0,
       foveatedTimeDelay: 0.2,
-      maximumNumberOfLoadedTiles: 128
+      maximumNumberOfLoadedTiles: 96
     }
   },
   cesium: {

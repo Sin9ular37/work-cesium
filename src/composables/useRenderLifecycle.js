@@ -122,10 +122,9 @@ export function useRenderLifecycle({
     }
     if (viewer.scene) {
       try {
-        viewer.scene.requestRenderMode = false;
-        if (typeof viewer.scene.requestRender === 'function') {
-          viewer.scene.requestRender();
-        }
+        // 始终使用按需渲染，避免持续跑满渲染循环
+        viewer.scene.requestRenderMode = true;
+        viewer.scene.requestRender?.();
       } catch (_) {}
     }
   };
@@ -323,4 +322,3 @@ export function useRenderLifecycle({
     dispose
   };
 }
-
